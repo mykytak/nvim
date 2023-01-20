@@ -53,6 +53,7 @@ vim.cmd [[cabbrev x <c-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'echo' : 'x')<C
 -- disable accidental buffers/splits closing
 vim.api.nvim_set_keymap('n', '<C-q>', '<nop>', { noremap  = true })
 vim.api.nvim_set_keymap('n', '<C-w>q', '<nop>', { noremap = true })
+vim.api.nvim_set_keymap('n', '<C-w><C-q>', '<nop>', { noremap = true })
 
 -- fast movement
 vim.api.nvim_set_keymap('', '<C-k>', '<C-u>', { noremap = true })
