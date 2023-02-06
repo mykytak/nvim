@@ -135,92 +135,122 @@ local on_attach = function(client)
   -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()', {})
 end
 
-nvim_lsp.rust_analyzer.setup(coq.lsp_ensure_capabilities {
-  on_attach = on_attach,
-  cmd = containers.command('rust_analyzer', {
-    network = "bridge",
-  }),
-  settings = {
-    ["rust-analyzer"] = {
-      imports = {
-        granularity = {
-          groups = "module"
-        },
-        prefix = "self",
-      },
-      cargo = {
-        buildScripts = {
-          enable = true
+function ensure_image_exists(cfg)
+  -- local settings = {
+  --   image = "required",
+  --   dockerfile = "optinal"
+  -- }
+
+  print(cfg.cmd)
+
+  return cfg
+  -- so I need my own basic lsp container
+  -- so I can branch from it with additional things
+
+  -- wrapper around lsp containers (cmd)
+  -- aimed to build image for a specific project (if necessary)
+  --
+  -- I'll need image name here,
+  -- and if image do not exist or need to be rebuilded,
+  -- then I should build it.
+  -- gotta check how(if) I can run build in separate thread/process
+  --
+  -- Build it from Dockerfile in project root or from provided path
+  --
+  -- for now it could be just some sort of project-related config
+  -- with image tag being passed to containers.command
+end
+
+nvim_lsp.rust_analyzer.setup(
+  coq.lsp_ensure_capabilities {
+    -- ensure_image_exists {
+      on_attach = on_attach,
+      cmd = containers.command('rust_analyzer', {
+        network = "bridge",
+      }),
+      settings = {
+        ["rust-analyzer"] = {
+          imports = {
+            granularity = {
+              groups = "module"
+            },
+            prefix = "self",
+          },
+          cargo = {
+            buildScripts = {
+              enable = true
+            }
+          },
+          procMacro = {
+            enable = true
+          }
         }
       },
-      procMacro = {
-        enable = true
-      }
-    }
-  },
 
-  -- get root_dir from container because there's no cargo in host
-  root_dir = function(fname)
-    local cargo_crate_dir = lsp_util.root_pattern 'Cargo.toml'(fname)
-    local cmd = containers.command('rust-analyzer', {
-      image = "docker.io/lspcontainers/rust-analyzer",
-      cmd_builder = function(runtime, workdir, image, network, docker_volume)
-        local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
+      -- get root_dir from container because there's no cargo in host
+      root_dir = function(fname)
+        local cargo_crate_dir = lsp_util.root_pattern 'Cargo.toml'(fname)
+        local cmd = containers.command('rust-analyzer', {
+          image = "docker.io/lspcontainers/rust-analyzer",
+          cmd_builder = function(runtime, workdir, image, network, docker_volume)
+            local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
 
-        local mnt_volume
-        if docker_volume ~= nil then
-          mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
+            local mnt_volume
+            if docker_volume ~= nil then
+              mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
+            else
+              mnt_volume = "--volume="..workdir..":"..workdir..":z"
+            end
+
+
+            return {
+              runtime,
+              "container",
+              "run",
+              "--interactive",
+              "--rm",
+              "--network="..network,
+              "--workdir="..workdir,
+              mnt_volume,
+              image,
+              unpack(docker_cmd)
+            }
+          end
+        })
+        local cargo_metadata = ''
+        local cargo_metadata_err = ''
+        local cm = vim.fn.jobstart(table.concat(cmd, ' '), {
+          on_stdout = function(_, d, _)
+            cargo_metadata = table.concat(d, '\n')
+          end,
+          on_stderr = function(_, d, _)
+            cargo_metadata_err = table.concat(d, '\n')
+          end,
+          stdout_buffered = true,
+          stderr_buffered = true,
+        })
+        if cm > 0 then
+          cm = vim.fn.jobwait({ cm })[1]
         else
-          mnt_volume = "--volume="..workdir..":"..workdir..":z"
+          cm = -1
         end
-
-
-        return {
-          runtime,
-          "container",
-          "run",
-          "--interactive",
-          "--rm",
-          "--network="..network,
-          "--workdir="..workdir,
-          mnt_volume,
-          image,
-          unpack(docker_cmd)
-        }
+        local cargo_workspace_dir = nil
+        if cm == 0 then
+          cargo_workspace_dir = vim.fn.json_decode(cargo_metadata)['workspace_root']
+        else
+          vim.notify(
+          string.format('[lspconfig] cmd (%q) failed:\n%s', table.concat(cmd, ' '), cargo_metadata_err),
+          vim.log.levels.WARN
+          )
+        end
+        return cargo_workspace_dir
+        or cargo_crate_dir
+        or lsp_util.root_pattern 'rust-project.json'(fname)
+        or lsp_util.find_git_ancestor(fname)
       end
-    })
-    local cargo_metadata = ''
-    local cargo_metadata_err = ''
-    local cm = vim.fn.jobstart(table.concat(cmd, ' '), {
-      on_stdout = function(_, d, _)
-        cargo_metadata = table.concat(d, '\n')
-      end,
-      on_stderr = function(_, d, _)
-        cargo_metadata_err = table.concat(d, '\n')
-      end,
-      stdout_buffered = true,
-      stderr_buffered = true,
-    })
-    if cm > 0 then
-      cm = vim.fn.jobwait({ cm })[1]
-    else
-      cm = -1
-    end
-    local cargo_workspace_dir = nil
-    if cm == 0 then
-      cargo_workspace_dir = vim.fn.json_decode(cargo_metadata)['workspace_root']
-    else
-      vim.notify(
-        string.format('[lspconfig] cmd (%q) failed:\n%s', table.concat(cmd, ' '), cargo_metadata_err),
-        vim.log.levels.WARN
-      )
-    end
-    return cargo_workspace_dir
-      or cargo_crate_dir
-      or lsp_util.root_pattern 'rust-project.json'(fname)
-      or lsp_util.find_git_ancestor(fname)
-  end
-})
+    -- }
+  }
+)
 
 nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
@@ -353,6 +383,8 @@ return require('packer').startup(
 
     use 'mhinz/vim-signify'
     use 'kdheepak/lazygit.nvim'
+
+    use 'lervag/vimtex'
   end
 )
 
