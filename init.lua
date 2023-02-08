@@ -136,12 +136,23 @@ local on_attach = function(client)
 end
 
 function ensure_image_exists(cfg)
+  return cfg
+
   -- local settings = {
   --   image = "required",
   --   dockerfile = "optinal"
   -- }
 
-  vim.api.nvim_buf_get_name(0)
+  -- I should hijack into LspStart
+
+  local fname = vim.api.nvim_buf_get_name(0)
+  local root_dir = lsp_util.root_pattern '.lspconf'(fname)
+
+  if type(root_dir) == "nil" then
+    vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.ERROR)
+  else
+    vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.ERROR)
+  end
 
   return cfg
 
