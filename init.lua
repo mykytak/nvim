@@ -141,9 +141,10 @@ function ensure_image_exists(cfg)
   --   dockerfile = "optinal"
   -- }
 
-  print(cfg.cmd)
+  vim.api.nvim_buf_get_name(0)
 
   return cfg
+
   -- so I need my own basic lsp container
   -- so I can branch from it with additional things
 
@@ -162,8 +163,8 @@ function ensure_image_exists(cfg)
 end
 
 nvim_lsp.rust_analyzer.setup(
-  coq.lsp_ensure_capabilities {
-    -- ensure_image_exists {
+  coq.lsp_ensure_capabilities(
+    ensure_image_exists {
       on_attach = on_attach,
       cmd = containers.command('rust_analyzer', {
         network = "bridge",
@@ -248,8 +249,8 @@ nvim_lsp.rust_analyzer.setup(
         or lsp_util.root_pattern 'rust-project.json'(fname)
         or lsp_util.find_git_ancestor(fname)
       end
-    -- }
-  }
+    }
+  )
 )
 
 nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
