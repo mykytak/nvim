@@ -135,6 +135,34 @@ local on_attach = function(client)
   -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()', {})
 end
 
+function get_project_image(lang, fname)
+  local root_dir = lsp_util.root_pattern '.lspconf'(fname)
+
+  -- return lang related image, not static one
+  local default_image = "lspcontainers/rust-analyzer"
+  return default_image
+
+  if type(root_dir) == "nil" then
+    return default_image
+  end
+
+  local local_config = {}
+  local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
+
+  if f then
+    f()
+    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
+
+    -- cfg.cmd = containers.command(local_config.image, {
+    --   network = "bridge",
+    -- }),
+
+    return local_config.image or default_image
+  end
+
+  return default_image
+end
+
 function ensure_image_exists(cfg)
   return cfg
 
@@ -150,23 +178,23 @@ function ensure_image_exists(cfg)
 
   if type(root_dir) == "nil" then
     vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.DEBUG)
+    return cfg
+  end
+
+  vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.DEBUG)
+
+  local local_config = {}
+  local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
+
+  if f then
+    f()
+    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
+
+    -- cfg.cmd = containers.command(local_config.image, {
+    --   network = "bridge",
+    -- }),
   else
-    vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.DEBUG)
-
-    local local_config = {}
-    local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
-
-    if f then
-      f()
-      vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
-
-      -- cfg.cmd = containers.command(local_config.image, {
-      --   network = "bridge",
-      -- }),
-    else
-      print(err)
-    end
-
+    print(err)
   end
 
   return cfg
@@ -194,6 +222,7 @@ nvim_lsp.rust_analyzer.setup(
       on_attach = on_attach,
       cmd = containers.command('rust_analyzer', {
         network = "bridge",
+        image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
       }),
       settings = {
         ["rust-analyzer"] = {
@@ -218,7 +247,7 @@ nvim_lsp.rust_analyzer.setup(
       root_dir = function(fname)
         local cargo_crate_dir = lsp_util.root_pattern 'Cargo.toml'(fname)
         local cmd = containers.command('rust-analyzer', {
-          image = "docker.io/lspcontainers/rust-analyzer",
+          image = get_project_image('rust', fname),
           cmd_builder = function(runtime, workdir, image, network, docker_volume)
             local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
 
