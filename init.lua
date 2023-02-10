@@ -149,9 +149,24 @@ function ensure_image_exists(cfg)
   local root_dir = lsp_util.root_pattern '.lspconf'(fname)
 
   if type(root_dir) == "nil" then
-    vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.ERROR)
+    vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.DEBUG)
   else
-    vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.ERROR)
+    vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.DEBUG)
+
+    local local_config = {}
+    local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
+
+    if f then
+      f()
+      vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
+
+      -- cfg.cmd = containers.command(local_config.image, {
+      --   network = "bridge",
+      -- }),
+    else
+      print(err)
+    end
+
   end
 
   return cfg
