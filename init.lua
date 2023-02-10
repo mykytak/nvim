@@ -135,12 +135,17 @@ local on_attach = function(client)
   -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()', {})
 end
 
+local skip_local_images = true
+
 function get_project_image(lang, fname)
   local root_dir = lsp_util.root_pattern '.lspconf'(fname)
 
   -- return lang related image, not static one
   local default_image = "lspcontainers/rust-analyzer"
-  return default_image
+
+  if skip_local_images then
+    return default_image
+  end
 
   if type(root_dir) == "nil" then
     return default_image
@@ -157,14 +162,16 @@ function get_project_image(lang, fname)
     --   network = "bridge",
     -- }),
 
-    return local_config.image or default_image
+    return local_config.image
   end
 
   return default_image
 end
 
 function ensure_image_exists(cfg)
-  return cfg
+  if skip_local_images then
+    return cfg
+  end
 
   -- local settings = {
   --   image = "required",
