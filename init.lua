@@ -135,7 +135,7 @@ local on_attach = function(client)
   -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()', {})
 end
 
-local skip_local_images = true
+local skip_local_images = false
 
 function get_project_image(lang, fname)
   local root_dir = lsp_util.root_pattern '.lspconf'(fname)
@@ -147,7 +147,7 @@ function get_project_image(lang, fname)
     return default_image
   end
 
-  if type(root_dir) == "nil" then
+  if root_dir == nil then
     return default_image
   end
 
@@ -156,6 +156,11 @@ function get_project_image(lang, fname)
 
   if f then
     f()
+
+    if local_config.image == nil then
+      return default_image
+    end
+
     vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
 
     -- cfg.cmd = containers.command(local_config.image, {
@@ -183,7 +188,7 @@ function ensure_image_exists(cfg)
   local fname = vim.api.nvim_buf_get_name(0)
   local root_dir = lsp_util.root_pattern '.lspconf'(fname)
 
-  if type(root_dir) == "nil" then
+  if root_dir == nil then
     vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.DEBUG)
     return cfg
   end
@@ -195,11 +200,8 @@ function ensure_image_exists(cfg)
 
   if f then
     f()
-    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
+    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image, vim.log.levels.DEBUG)
 
-    -- cfg.cmd = containers.command(local_config.image, {
-    --   network = "bridge",
-    -- }),
   else
     print(err)
   end
@@ -222,6 +224,8 @@ function ensure_image_exists(cfg)
   -- for now it could be just some sort of project-related config
   -- with image tag being passed to containers.command
 end
+
+-- vim.lsp.set_log_level("debug")
 
 nvim_lsp.rust_analyzer.setup(
   coq.lsp_ensure_capabilities(
