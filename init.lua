@@ -137,104 +137,88 @@ end
 
 local skip_local_images = false
 
-function get_project_image(lang, fname)
-  local root_dir = lsp_util.root_pattern '.lspconf'(fname)
+function get_local_config(fname)
+  local root_dir = lsp_util.root_pattern ".lspconf"(fname)
 
-  -- return lang related image, not static one
-  local default_image = "lspcontainers/rust-analyzer"
+  local cfg = {}
 
-  if skip_local_images then
-    return default_image
-  end
-
+  -- no local config found
   if root_dir == nil then
-    return default_image
-  end
-
-  local local_config = {}
-  local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
-
-  if f then
-    f()
-
-    if local_config.image == nil then
-      return default_image
-    end
-
-    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
-
-    -- cfg.cmd = containers.command(local_config.image, {
-    --   network = "bridge",
-    -- }),
-
-    return local_config.image
-  end
-
-  return default_image
-end
-
-function ensure_image_exists(cfg)
-  if skip_local_images then
     return cfg
   end
 
-  -- local settings = {
-  --   image = "required",
-  --   dockerfile = "optinal"
-  -- }
-
-  -- I should hijack into LspStart
-
-  local fname = vim.api.nvim_buf_get_name(0)
-  local root_dir = lsp_util.root_pattern '.lspconf'(fname)
-
-  if root_dir == nil then
-    vim.notify("[LSP_IMAGE DEBUG] no local config for " .. fname, vim.log.levels.DEBUG)
-    return cfg
-  end
-
-  vim.notify("[LSP_IMAGE DEBUG] root dir found: " .. root_dir, vim.log.levels.DEBUG)
-
-  local local_config = {}
-  local f, err = loadfile(root_dir .. "/.lspconf", "t", local_config)
+  local f, err = loadfile(root_dir .. "/.lspconf", "t", cfg)
 
   if f then
     f()
-    vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image, vim.log.levels.DEBUG)
-
   else
-    print(err)
+    vim.error("[LSP_IMAGE DEBUG] error loading local config for " .. fname .. ": " .. err)
   end
 
   return cfg
+end
 
-  -- so I need my own basic lsp container
-  -- so I can branch from it with additional things
+
+
+function get_project_image(lang, fname)
+
+  -- return lang related image, not static one
+  local default_image = "lsp/rust"
+
+  if skip_local_images then
+    return default_image
+  end
+
+
+  local local_config = get_local_config(fname)
+
+  if local_config.image == nil then
+    return default_image
+  end
+
+  vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
+
+  return local_config.image
+end
+
+
+
+function ensure_image_exists(lang, cfg)
+  if skip_local_images then
+    return cfg
+  end
+
+  -- I should hijack into LspStart
+
+  -- local fname = vim.api.nvim_buf_get_name(0)
+  -- local local_config = get_local_config(fname)
+
+  return cfg
 
   -- wrapper around lsp containers (cmd)
-  -- aimed to build image for a specific project (if necessary)
+  -- aimed to ensure lsp image exist for a specific project
   --
-  -- I'll need image name here,
-  -- and if image do not exist or need to be rebuilded,
-  -- then I should build it.
-  -- gotta check how(if) I can run build in separate thread/process
-  --
-  -- Build it from Dockerfile in project root or from provided path
-  --
-  -- for now it could be just some sort of project-related config
+  -- some sort of project-related config
   -- with image tag being passed to containers.command
+  -- with check if image exist
+  -- and reminder to check for updates for it every now and then
 end
 
 -- vim.lsp.set_log_level("debug")
 
 nvim_lsp.rust_analyzer.setup(
-  coq.lsp_ensure_capabilities(
-    ensure_image_exists {
+  coq.lsp_ensure_capabilities({
       on_attach = on_attach,
-      cmd = containers.command('rust_analyzer', {
-        network = "bridge",
-        image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
-      }),
+      cmd = containers.command(
+        "rust_analyzer",
+        ensure_image_exists(
+          "rust",
+          {
+            network = "bridge",
+            image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
+          }
+        )
+      ),
       settings = {
         ["rust-analyzer"] = {
           imports = {
@@ -256,7 +240,17 @@ nvim_lsp.rust_analyzer.setup(
 
       -- get root_dir from container because there's no cargo in host
       root_dir = function(fname)
-        local cargo_crate_dir = lsp_util.root_pattern 'Cargo.toml'(fname)
+        local local_config = get_local_config(fname)
+
+        vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
+
+        local cargo_name = ""
+        if local_config.root_dir ~= nil then
+          cargo_name = local_config.root_dir .. "/"
+        end
+        cargo_name = cargo_name .. "Cargo.toml"
+
+        local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(fname)
         local cmd = containers.command('rust-analyzer', {
           image = get_project_image('rust', fname),
           cmd_builder = function(runtime, workdir, image, network, docker_volume)
