@@ -136,23 +136,25 @@ local on_attach = function(client)
 end
 
 local skip_local_images = false
+local config_name = ".lspconfig"
 
 function get_local_config(fname)
-  local root_dir = lsp_util.root_pattern ".lspconf"(fname)
+  local root_dir = lsp_util.root_pattern(config_name)(fname)
 
   local cfg = {}
 
   -- no local config found
   if root_dir == nil then
+    vim.notify("[LSP_IMAGE DEBUG] no local config found for " .. fname)
     return cfg
   end
 
-  local f, err = loadfile(root_dir .. "/.lspconf", "t", cfg)
+  local f, err = loadfile(root_dir .. "/" .. config_name, "t", cfg)
 
   if f then
     f()
   else
-    vim.error("[LSP_IMAGE DEBUG] error loading local config for " .. fname .. ": " .. err)
+    vim.notify("[LSP_IMAGE DEBUG] error loading local config for " .. fname .. ": " .. err)
   end
 
   return cfg
@@ -251,6 +253,11 @@ nvim_lsp.rust_analyzer.setup(
         cargo_name = cargo_name .. "Cargo.toml"
 
         local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(fname)
+
+        if local_config.root_dir ~=nil then
+          cargo_crate_dir = cargo_crate_dir .. "/" .. local_config.root_dir
+        end
+
         local cmd = containers.command('rust-analyzer', {
           image = get_project_image('rust', fname),
           cmd_builder = function(runtime, workdir, image, network, docker_volume)
@@ -259,6 +266,8 @@ nvim_lsp.rust_analyzer.setup(
             local mnt_volume
             if docker_volume ~= nil then
               mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
+            elseif cargo_crate_dir ~= nil then
+              mnt_volume = "--volume="..cargo_crate_dir..":"..workdir..":z"
             else
               mnt_volume = "--volume="..workdir..":"..workdir..":z"
             end
