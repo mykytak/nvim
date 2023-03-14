@@ -190,11 +190,55 @@ function ensure_image_exists(lang, cfg)
     return cfg
   end
 
+  local fname = vim.api.nvim_buf_get_name(0)
+
+  cfg.cmd_builder = function(runtime, workdir, image, network, docker_volume)
+    local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
+
+    local local_config = get_local_config(fname)
+
+    vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
+
+    local cargo_name = ""
+    if local_config.root_dir ~= nil then
+      cargo_name = local_config.root_dir .. "/"
+    end
+    cargo_name = cargo_name .. "Cargo.toml"
+
+    local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(fname)
+
+    local mnt_volume
+    if docker_volume ~= nil then
+      mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
+    elseif cargo_crate_dir ~= nil then
+      mnt_volume = "--volume="..cargo_crate_dir..":"..workdir..":z"
+    else
+      mnt_volume = "--volume="..workdir..":"..workdir..":z"
+    end
+
+    vim.notify("[LSP_IMAGE DEBUG] mnt_volume: "..mnt_volume)
+
+
+    return {
+      runtime,
+      "container",
+      "run",
+      "--interactive",
+      "--rm",
+      "--network="..network,
+      "--workdir="..workdir,
+      mnt_volume,
+      image,
+      unpack(docker_cmd)
+    }
+  end
+
   -- I should hijack into LspStart
 
   -- local fname = vim.api.nvim_buf_get_name(0)
   -- local local_config = get_local_config(fname)
 
+  vim.notify("[LSP_IMAGE DEBUG] ensure_image_exist cfg: " .. table.concat(cfg, ' '))
   return cfg
 
   -- wrapper around lsp containers (cmd)
@@ -242,51 +286,20 @@ nvim_lsp.rust_analyzer.setup(
 
       -- get root_dir from container because there's no cargo in host
       root_dir = function(fname)
-        local local_config = get_local_config(fname)
-
-        vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
-
-        local cargo_name = ""
-        if local_config.root_dir ~= nil then
-          cargo_name = local_config.root_dir .. "/"
-        end
-        cargo_name = cargo_name .. "Cargo.toml"
-
-        local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(fname)
-
-        if local_config.root_dir ~=nil then
-          cargo_crate_dir = cargo_crate_dir .. "/" .. local_config.root_dir
-        end
-
-        local cmd = containers.command('rust-analyzer', {
-          image = get_project_image('rust', fname),
-          cmd_builder = function(runtime, workdir, image, network, docker_volume)
-            local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
-
-            local mnt_volume
-            if docker_volume ~= nil then
-              mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
-            elseif cargo_crate_dir ~= nil then
-              mnt_volume = "--volume="..cargo_crate_dir..":"..workdir..":z"
-            else
-              mnt_volume = "--volume="..workdir..":"..workdir..":z"
-            end
-
-
-            return {
-              runtime,
-              "container",
-              "run",
-              "--interactive",
-              "--rm",
-              "--network="..network,
-              "--workdir="..workdir,
-              mnt_volume,
-              image,
-              unpack(docker_cmd)
+        local cmd = containers.command(
+          "rust_analyzer",
+          ensure_image_exists(
+            "rust",
+            {
+              network = "bridge",
+              image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
             }
-          end
-        })
+          )
+        )
+        -- local cmd = cfg.cmd
+
+        -- vim.notify("[LSP_IMAGE DEBUG] root_dir cmd: " .. table.concat(cfg, ' '))
+
         local cargo_metadata = ''
         local cargo_metadata_err = ''
         local cm = vim.fn.jobstart(table.concat(cmd, ' '), {
