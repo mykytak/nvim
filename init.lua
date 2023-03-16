@@ -135,6 +135,26 @@ local on_attach = function(client)
   -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()', {})
 end
 
+
+
+
+-- Print contents of `tbl`, with indentation.
+-- `indent` sets the initial level of indentation.
+function tprint (tbl, indent)
+  if not indent then indent = 0 end
+  for k, v in pairs(tbl) do
+    formatting = string.rep("  ", indent) .. k .. ": "
+    if type(v) == "table" then
+      return formatting .. tprint(v, indent+1)
+    elseif type(v) == 'boolean' then
+      return formatting .. tostring(v)
+    else
+      return formatting .. v
+    end
+  end
+end
+
+
 local skip_local_images = false
 local config_name = ".lspconfig"
 
@@ -192,10 +212,11 @@ function ensure_image_exists(lang, cfg)
 
   local fname = vim.api.nvim_buf_get_name(0)
 
+  cfg.image = get_project_image('rust', fname)
   cfg.cmd_builder = function(runtime, workdir, image, network, docker_volume)
     local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
 
-    local local_config = get_local_config(fname)
+    local local_config = get_local_config(workdir)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
 
@@ -205,7 +226,31 @@ function ensure_image_exists(lang, cfg)
     end
     cargo_name = cargo_name .. "Cargo.toml"
 
-    local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(fname)
+    local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(workdir)
+
+    if local_config.root_dir ~= nil then
+      cargo_crate_dir = cargo_crate_dir .. "/" .. local_config.root_dir
+    end
+
+    if cargo_crate_dir ~= nil then
+      vim.notify("[LSP_IMAGE DEBUG] cargo_crate_dir: " .. cargo_crate_dir)
+    else
+      vim.notify("[LSP_IMAGE DEBUG] no cargo_crate_dir found for: " .. cargo_name .. " in " .. fname)
+    end
+
+
+    -- if local_config.root_dir ~= nil then
+    --   fname = fname .. "/" .. local_config.root_dir
+    -- end
+
+    -- local cargo_crate_dir = lsp_util.root_pattern "Cargo.toml"(fname)
+
+    -- if cargo_crate_dir ~= nil then
+    --   vim.notify("[LSP_IMAGE DEBUG] cargo_crate_dir: " .. cargo_crate_dir)
+    -- else
+    --   vim.notify("[LSP_IMAGE DEBUG] no cargo_crate_dir found in " .. fname)
+    -- end
+
 
     local mnt_volume
     if docker_volume ~= nil then
@@ -238,7 +283,7 @@ function ensure_image_exists(lang, cfg)
   -- local fname = vim.api.nvim_buf_get_name(0)
   -- local local_config = get_local_config(fname)
 
-  vim.notify("[LSP_IMAGE DEBUG] ensure_image_exist cfg: " .. table.concat(cfg, ' '))
+  vim.notify("[LSP_IMAGE DEBUG] ensure_image_exist cfg: " .. tprint(cfg))
   return cfg
 
   -- wrapper around lsp containers (cmd)
@@ -296,9 +341,8 @@ nvim_lsp.rust_analyzer.setup(
             }
           )
         )
-        -- local cmd = cfg.cmd
 
-        -- vim.notify("[LSP_IMAGE DEBUG] root_dir cmd: " .. table.concat(cfg, ' '))
+        vim.notify("[LSP_IMAGE DEBUG] root_dir cmd: " .. table.concat(cmd, ' '))
 
         local cargo_metadata = ''
         local cargo_metadata_err = ''
@@ -327,7 +371,6 @@ nvim_lsp.rust_analyzer.setup(
           )
         end
         return cargo_workspace_dir
-        or cargo_crate_dir
         or lsp_util.root_pattern 'rust-project.json'(fname)
         or lsp_util.find_git_ancestor(fname)
       end
