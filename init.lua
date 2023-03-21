@@ -212,10 +212,8 @@ function ensure_image_exists(lang, cfg)
 
   local fname = vim.api.nvim_buf_get_name(0)
 
-  cfg.image = get_project_image('rust', fname)
+  cfg.image = cfg.image or get_project_image('rust', fname)
   cfg.cmd_builder = function(runtime, workdir, image, network, docker_volume)
-    local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
-
     local local_config = get_local_config(workdir)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
@@ -274,7 +272,7 @@ function ensure_image_exists(lang, cfg)
       "--workdir="..workdir,
       mnt_volume,
       image,
-      unpack(docker_cmd)
+      "rust-analyzer"
     }
   end
 
@@ -306,7 +304,6 @@ nvim_lsp.rust_analyzer.setup(
           "rust",
           {
             network = "bridge",
-            image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
           }
         )
       ),
@@ -342,6 +339,10 @@ nvim_lsp.rust_analyzer.setup(
           )
         )
 
+        local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
+
+        table.move(docker_cmd, 1, #docker_cmd, #cmd, cmd)
+
         vim.notify("[LSP_IMAGE DEBUG] root_dir cmd: " .. table.concat(cmd, ' '))
 
         local cargo_metadata = ''
@@ -370,9 +371,15 @@ nvim_lsp.rust_analyzer.setup(
           vim.log.levels.WARN
           )
         end
-        return cargo_workspace_dir
+        local result = cargo_workspace_dir
         or lsp_util.root_pattern 'rust-project.json'(fname)
         or lsp_util.find_git_ancestor(fname)
+
+        vim.notify(
+          "[LSP_IMAGE DEBUG] root_dir for " .. fname .. " is " .. result
+        )
+
+        return result
       end
     }
   )
