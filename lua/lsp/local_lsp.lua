@@ -69,7 +69,7 @@ local function get_project_image(lang, fname)
 
   vim.notify("[LSP_IMAGE DEBUG] local image loaded: " .. local_config.image)
 
-  return local_config.image
+  return local_config.image or default_image
 end
 
 LocalLsp.get_project_image = get_project_image;
@@ -137,6 +137,10 @@ function LocalLsp.ensure_image_exists(lang, cfg)
 
     vim.notify("[LSP_IMAGE DEBUG] mnt_volume: "..mnt_volume)
 
+    local configs = require("lspconfig.configs");
+
+    vim.notify("[LSP_IMAGE DEBUG] configs loaded: " .. tprint(configs))
+    vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (cfg.cmd or configs["rust_analyzer"].cmd))
 
     return {
       runtime,

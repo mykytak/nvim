@@ -139,22 +139,20 @@ end
 
 -- vim.lsp.set_log_level("debug")
 
-local get_project_image = require("local_lsp").get_project_image
-local ensure_image_exists = require("local_lsp").ensure_image_exists
+local local_lsp = require("lsp.local_lsp")
 
 local function get_root_dir_for_rust(fname)
   local cmd = containers.command(
     "rust_analyzer",
-    ensure_image_exists(
+    local_lsp.ensure_image_exists(
       "rust",
-      {
-        network = "bridge",
-        image = get_project_image('rust', vim.api.nvim_buf_get_name(0))
-      }
+      { network = "bridge" }
     )
   )
 
   local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
+
+  vim.notify("[LSP_IMAGE DEBUG] root_dir cmd (before change): " .. table.concat(cmd, ' '))
 
   table.move(docker_cmd, 1, #docker_cmd, #cmd, cmd)
 
@@ -202,7 +200,7 @@ nvim_lsp.rust_analyzer.setup(
       on_attach = on_attach,
       cmd = containers.command(
         "rust_analyzer",
-        ensure_image_exists(
+        local_lsp.ensure_image_exists(
           "rust",
           {
             network = "bridge",
