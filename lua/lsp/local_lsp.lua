@@ -137,10 +137,10 @@ function LocalLsp.ensure_image_exists(lang, cfg)
 
     vim.notify("[LSP_IMAGE DEBUG] mnt_volume: "..mnt_volume)
 
-    local configs = require("lspconfig.configs");
+    local def_config = require("lspconfig.server_configurations.rust_analyzer").default_config;
 
-    vim.notify("[LSP_IMAGE DEBUG] configs loaded: " .. tprint(configs))
-    vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (cfg.cmd or configs["rust_analyzer"].cmd))
+    vim.notify("[LSP_IMAGE DEBUG] configs loaded: " .. tprint(def_config))
+    vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (cfg.cmd or tprint(def_config.cmd)))
 
     return {
       runtime,
@@ -152,7 +152,7 @@ function LocalLsp.ensure_image_exists(lang, cfg)
       "--workdir="..workdir,
       mnt_volume,
       image,
-      cfg.cmd
+      cfg.cmd or table.concat(def_config.cmd)
     }
   end
 
