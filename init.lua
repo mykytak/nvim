@@ -145,7 +145,7 @@ local function get_root_dir_for_rust(fname)
   local cmd = containers.command(
     "rust_analyzer",
     local_lsp.ensure_image_exists(
-      "rust",
+      "rust-analyzer",
       { network = "bridge" }
     )
   )
@@ -201,7 +201,7 @@ nvim_lsp.rust_analyzer.setup(
       cmd = containers.command(
         "rust_analyzer",
         local_lsp.ensure_image_exists(
-          "rust",
+          "rust-analyzer",
           {
             network = "bridge",
           }

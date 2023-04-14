@@ -53,8 +53,13 @@ LocalLsp.get_local_config = get_local_config;
 
 local function get_project_image(lang, fname)
 
-  -- return lang related image, not static one
-  local default_image = "lsp/rust"
+  local lang_config = require("local_lsp." .. lang)
+  local supported_languages = require("lspcontainers.init").supported_languages
+
+  local default_image =
+    (lang_config ~= nil and lang_config.image ~= nil)
+      and lang_config.image
+      or  supported_languages[lang].image
 
   if skip_local_images then
     return default_image
@@ -94,50 +99,41 @@ function LocalLsp.ensure_image_exists(lang, cfg)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
 
-    local cargo_name = ""
+    local lang_config = require("local_lsp." .. lang)
+
+    local root_name = ""
     if local_config.root_dir ~= nil then
-      cargo_name = local_config.root_dir .. "/"
+      root_name = local_config.root_dir .. "/"
     end
-    cargo_name = cargo_name .. "Cargo.toml"
+    if lang_config ~= nil and lang_config.root_file ~= nil then
+      root_name = root_name .. lang_config.root_file
+    end
+    -- root_name = root_name .. "Cargo.toml"
 
-    local cargo_crate_dir = lsp_util.root_pattern(cargo_name)(workdir)
+    local root_dir = lsp_util.root_pattern(root_name)(workdir)
 
     if local_config.root_dir ~= nil then
-      cargo_crate_dir = cargo_crate_dir .. "/" .. local_config.root_dir
+      root_dir = root_dir .. "/" .. local_config.root_dir
     end
 
-    if cargo_crate_dir ~= nil then
-      vim.notify("[LSP_IMAGE DEBUG] cargo_crate_dir: " .. cargo_crate_dir)
+    if root_dir ~= nil then
+      vim.notify("[LSP_IMAGE DEBUG] root_dir: " .. root_dir)
     else
-      vim.notify("[LSP_IMAGE DEBUG] no cargo_crate_dir found for: " .. cargo_name .. " in " .. fname)
+      vim.notify("[LSP_IMAGE DEBUG] no root_dir found for: " .. root_name .. " in " .. fname)
     end
-
-
-    -- if local_config.root_dir ~= nil then
-    --   fname = fname .. "/" .. local_config.root_dir
-    -- end
-
-    -- local cargo_crate_dir = lsp_util.root_pattern "Cargo.toml"(fname)
-
-    -- if cargo_crate_dir ~= nil then
-    --   vim.notify("[LSP_IMAGE DEBUG] cargo_crate_dir: " .. cargo_crate_dir)
-    -- else
-    --   vim.notify("[LSP_IMAGE DEBUG] no cargo_crate_dir found in " .. fname)
-    -- end
-
 
     local mnt_volume
     if docker_volume ~= nil then
       mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
-    elseif cargo_crate_dir ~= nil then
-      mnt_volume = "--volume="..cargo_crate_dir..":"..workdir..":z"
+    elseif root_dir ~= nil then
+      mnt_volume = "--volume="..root_dir..":"..workdir..":z"
     else
       mnt_volume = "--volume="..workdir..":"..workdir..":z"
     end
 
     vim.notify("[LSP_IMAGE DEBUG] mnt_volume: "..mnt_volume)
 
-    local def_config = require("lspconfig.server_configurations.rust_analyzer").default_config;
+    local def_config = require("lspconfig.server_configurations." .. lang).default_config;
 
     vim.notify("[LSP_IMAGE DEBUG] configs loaded: " .. tprint(def_config))
     vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (cfg.cmd or tprint(def_config.cmd)))
