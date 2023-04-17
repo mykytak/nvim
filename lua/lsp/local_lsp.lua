@@ -53,7 +53,7 @@ LocalLsp.get_local_config = get_local_config;
 
 local function get_project_image(lang, fname)
 
-  local lang_config = require("local_lsp." .. lang)
+  local lang_config = require("lsp.local_lsp." .. lang)
   local supported_languages = require("lspcontainers.init").supported_languages
 
   local default_image =
@@ -99,7 +99,7 @@ function LocalLsp.ensure_image_exists(lang, cfg)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
 
-    local lang_config = require("local_lsp." .. lang)
+    local lang_config = require("lsp.local_lsp." .. lang)
 
     local root_name = ""
     if local_config.root_dir ~= nil then

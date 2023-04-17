@@ -145,7 +145,7 @@ local function get_root_dir_for_rust(fname)
   local cmd = containers.command(
     "rust_analyzer",
     local_lsp.ensure_image_exists(
-      "rust-analyzer",
+      "rust_analyzer",
       { network = "bridge" }
     )
   )
@@ -201,14 +201,14 @@ nvim_lsp.rust_analyzer.setup(
       cmd = containers.command(
         "rust_analyzer",
         local_lsp.ensure_image_exists(
-          "rust-analyzer",
+          "rust_analyzer",
           {
             network = "bridge",
           }
         )
       ),
       settings = {
-        ["rust-analyzer"] = {
+        ["rust_analyzer"] = {
           imports = {
             granularity = {
               groups = "module"
@@ -246,6 +246,19 @@ nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
   cmd = containers.command('vuels'),
   --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
 })
+
+-- nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
+--   on_attach = on_attach,
+--   cmd = containers.command(
+--     "volar",
+--     local_lsp.ensure_image_exists(
+--       "volar",
+--       {
+--         network = "bridge",
+--       }
+--     )
+--   ),
+-- });
 
 -- ruby
 -- nvim_lsp.solargraph.setup(coq.lsp_ensure_capabilities {
