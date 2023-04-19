@@ -238,27 +238,27 @@ nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
 })
 
 -- vue.js
-nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
-  on_attach = on_attach,
-  before_init = function(params)
-    params.processId = vim.NIL
-  end,
-  cmd = containers.command('vuels'),
-  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
-})
+--nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
+--  on_attach = on_attach,
+--  before_init = function(params)
+--    params.processId = vim.NIL
+--  end,
+--  cmd = containers.command('vuels'),
+--  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
+--})
 
--- nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
---   on_attach = on_attach,
---   cmd = containers.command(
---     "volar",
---     local_lsp.ensure_image_exists(
---       "volar",
---       {
---         network = "bridge",
---       }
---     )
---   ),
--- });
+nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
+  on_attach = on_attach,
+  cmd = containers.command(
+    "volar",
+    local_lsp.ensure_image_exists(
+      "volar",
+      {
+        network = "bridge",
+      }
+    )
+  ),
+});
 
 -- ruby
 -- nvim_lsp.solargraph.setup(coq.lsp_ensure_capabilities {

@@ -25,7 +25,7 @@ local function tprint (tbl, indent)
 end
 
 
-local function get_local_config(fname)
+local function get_local_config(fname, lang)
   local root_dir = lsp_util.root_pattern(config_name)(fname)
 
   local cfg = {}
@@ -44,12 +44,38 @@ local function get_local_config(fname)
     vim.notify("[LSP_IMAGE DEBUG] error loading local config for " .. fname .. ": " .. err)
   end
 
-  return cfg
+  return cfg[lang] or {}
 end
 
 LocalLsp.get_local_config = get_local_config;
 
 
+local function get_root_dir(lang, fname)
+  local cfg = get_local_config(fname, lang)
+
+  vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (cfg.root_dir or "NONE"))
+
+  local lang_config = require("lsp.local_lsp." .. lang)
+
+  local root_name = ""
+  if cfg.root_dir ~= nil then
+    root_name = cfg.root_dir .. "/"
+  end
+  if lang_config ~= nil and lang_config.root_file ~= nil then
+    root_name = root_name .. lang_config.root_file
+  end
+  -- root_name = root_name .. "Cargo.toml"
+
+  local root_dir = lsp_util.root_pattern(root_name)(fname)
+
+  if cfg.root_dir ~= nil then
+    root_dir = root_dir .. "/" .. cfg.root_dir
+  end
+
+  return root_dir
+end
+
+LocalLsp.get_root_dir = get_root_dir
 
 local function get_project_image(lang, fname)
 
@@ -66,7 +92,7 @@ local function get_project_image(lang, fname)
   end
 
 
-  local local_config = get_local_config(fname)
+  local local_config = get_local_config(fname, lang)
 
   if local_config.image == nil then
     return default_image
@@ -89,38 +115,18 @@ function LocalLsp.ensure_image_exists(lang, cfg)
   local fname = vim.api.nvim_buf_get_name(0)
 
   cfg.image = cfg.image or get_project_image(lang, fname)
+  cfg.root_dir = cfg.root_dir or get_root_dir(lang, fname)
   cfg.cmd_builder = function(runtime, workdir, image, network, docker_volume)
 
     -- I can extract this whole thing into separate func
     -- If it's rust specific - I can use it as is.
     -- If it's not - I probably can generalize it.
 
-    local local_config = get_local_config(workdir)
+    local local_config = get_local_config(workdir, lang)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
 
-    local lang_config = require("lsp.local_lsp." .. lang)
-
-    local root_name = ""
-    if local_config.root_dir ~= nil then
-      root_name = local_config.root_dir .. "/"
-    end
-    if lang_config ~= nil and lang_config.root_file ~= nil then
-      root_name = root_name .. lang_config.root_file
-    end
-    -- root_name = root_name .. "Cargo.toml"
-
-    local root_dir = lsp_util.root_pattern(root_name)(workdir)
-
-    if local_config.root_dir ~= nil then
-      root_dir = root_dir .. "/" .. local_config.root_dir
-    end
-
-    if root_dir ~= nil then
-      vim.notify("[LSP_IMAGE DEBUG] root_dir: " .. root_dir)
-    else
-      vim.notify("[LSP_IMAGE DEBUG] no root_dir found for: " .. root_name .. " in " .. fname)
-    end
+    local root_dir = get_root_dir(lang, fname)
 
     local mnt_volume
     if docker_volume ~= nil then
@@ -168,7 +174,6 @@ function LocalLsp.ensure_image_exists(lang, cfg)
   -- with check if image exist
   -- and reminder to check for updates for it every now and then
 end
-
 
 
 return LocalLsp;
