@@ -118,10 +118,6 @@ function LocalLsp.ensure_image_exists(lang, cfg)
   cfg.root_dir = cfg.root_dir or get_root_dir(lang, fname)
   cfg.cmd_builder = function(runtime, workdir, image, network, docker_volume)
 
-    -- I can extract this whole thing into separate func
-    -- If it's rust specific - I can use it as is.
-    -- If it's not - I probably can generalize it.
-
     local local_config = get_local_config(workdir, lang)
 
     vim.notify("[LSP_IMAGE DEBUG] local root_dir found: " .. (local_config.root_dir or "NONE"))
@@ -154,7 +150,7 @@ function LocalLsp.ensure_image_exists(lang, cfg)
       "--workdir="..workdir,
       mnt_volume,
       image,
-      cfg.cmd or table.concat(def_config.cmd)
+      cfg.cmd or table.concat(def_config.cmd, ' ')
     }
   end
 
