@@ -11,18 +11,26 @@ local lsp_util = require'lspconfig.util'
 -- Print contents of `tbl`, with indentation.
 -- `indent` sets the initial level of indentation.
 local function tprint (tbl, indent)
+  if not type(tbl) == "table" then return tostring(tbl) end
+  if tbl == nil then return "nil" end
   if not indent then indent = 0 end
+  local res = ""
   for k, v in pairs(tbl) do
     local formatting = string.rep("  ", indent) .. k .. ": "
     if type(v) == "table" then
-      return formatting .. tprint(v, indent+1)
+      res = res..formatting..tprint(v, indent+1).."\n"
     elseif type(v) == 'boolean' then
-      return formatting .. tostring(v)
+      res = res..formatting..tostring(v).."\n"
+    elseif type(v) == 'function' then
+      res = res..formatting.." (func)\n"
     else
-      return formatting .. v
+      res = res..formatting..v.."\n"
     end
   end
+  return res
 end
+
+LocalLsp.tprint = tprint
 
 
 local function get_local_config(fname, lang)
@@ -138,7 +146,11 @@ function LocalLsp.ensure_image_exists(lang, cfg)
     local def_config = require("lspconfig.server_configurations." .. lang).default_config;
 
     vim.notify("[LSP_IMAGE DEBUG] configs loaded: " .. tprint(def_config))
-    vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (cfg.cmd or tprint(def_config.cmd)))
+    vim.notify("[LSP_IMAGE DEBUG] cfg.cmd: " .. (tprint(cfg.cmd) or tprint(def_config.cmd)))
+
+    local cmd = cfg.cmd or def_config.cmd
+
+    if type(cmd) ~= "table" then cmd = { cmd } end
 
     return {
       runtime,
@@ -150,7 +162,7 @@ function LocalLsp.ensure_image_exists(lang, cfg)
       "--workdir="..workdir,
       mnt_volume,
       image,
-      cfg.cmd or table.concat(def_config.cmd, ' ')
+      table.concat(cmd, ' ')
     }
   end
 
@@ -159,7 +171,8 @@ function LocalLsp.ensure_image_exists(lang, cfg)
   -- local fname = vim.api.nvim_buf_get_name(0)
   -- local local_config = get_local_config(fname)
 
-  vim.notify("[LSP_IMAGE DEBUG] ensure_image_exist cfg: " .. tprint(cfg))
+  vim.notify("[LSP_IMAGE DEBUG] ensure_image_exist cfg for " .. lang .. ": " .. tprint(cfg))
+
   return cfg
 
   -- wrapper around lsp containers (cmd)

@@ -255,7 +255,10 @@ nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
       "volar",
       {
         network = "bridge",
-        cmd = "/usr/local/bin/vue-language-server --stdio"
+        cmd = {
+          "/usr/local/bin/vue-language-server",
+          "--stdio"
+        }
       }
     )
   ),
