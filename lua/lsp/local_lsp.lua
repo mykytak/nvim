@@ -11,7 +11,9 @@ local lsp_util = require'lspconfig.util'
 -- Print contents of `tbl`, with indentation.
 -- `indent` sets the initial level of indentation.
 local function tprint (tbl, indent)
-  if not type(tbl) == "table" then return tostring(tbl) end
+  if not type(tbl) == "table" then
+    return tostring(tbl)
+  end
   if tbl == nil then return "nil" end
   if not indent then indent = 0 end
   local res = ""
@@ -79,6 +81,15 @@ local function get_root_dir(lang, fname)
   if cfg.root_dir ~= nil then
     root_dir = root_dir .. "/" .. cfg.root_dir
   end
+
+  if root_dir == nil then
+    root_dir = lsp_util.root_pattern("app/"..root_name)(fname)
+    if root_dir ~= nil then
+      root_dir=root_dir.."/app"
+    end
+  end
+
+  vim.notify("[LSP_IMAGE DEGUG] root_dir for "..fname..": "..(root_dir or "NONE"))
 
   return root_dir
 end
@@ -152,7 +163,7 @@ function LocalLsp.ensure_image_exists(lang, cfg)
 
     if type(cmd) ~= "table" then cmd = { cmd } end
 
-    return {
+    local result = {
       runtime,
       "container",
       "run",
@@ -164,6 +175,10 @@ function LocalLsp.ensure_image_exists(lang, cfg)
       image,
       table.concat(cmd, ' ')
     }
+
+    vim.notify("[LSP_IMAGE DEBUG] final cmd: "..tprint(result))
+
+    return result
   end
 
   -- I should hijack into LspStart
