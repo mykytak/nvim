@@ -11,13 +11,14 @@ local coq      = require'coq'
 local on_attach = function(client)
   vim.api.nvim_set_keymap('n', 'gd', '<cmd>lua vim.lsp.buf.definition()<CR>', {})
   vim.api.nvim_set_keymap('n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>', {})
-  vim.api.nvim_set_keymap('n', '<C-Space>', '<cmd>lua vim.lsp.buf.hover()<CR>', {})
+  vim.api.nvim_set_keymap('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>', {})
 
   -- vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
   vim.api.nvim_set_keymap('n', 'KK',  '<cmd>lua vim.lsp.buf.hover()<CR>', {})
-  -- vim.api.nvim_set_keymap('', '<C-space>', '<cmd>lua vim.lsp.buf.signature_help()', {})
-  -- vim.api.nvim_set_keymap('', '', '<cmd>lua vim.lsp.buf.code_action()', {})
-  -- vim.api.nvim_set_keymap('', '', '<cmd>lua vim.lsp.vuf.completion()', {})
+  vim.api.nvim_set_keymap('', '<C-space>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', {})
+  vim.api.nvim_set_keymap('n', 'KA', '<cmd>lua vim.lsp.buf.code_action()<CR>', {})
+  -- vim.api.nvim_set_keymap('i', '<C-c>', '<cmd>lua vim.lsp.buf.completion()<CR>', {})
+  vim.api.nvim_set_keymap('n', 'KR', '<cmd>lua vim.lsp.buf.rename()<CR>', {})
 end
 
 -- vim.lsp.set_log_level("debug")
@@ -121,31 +122,38 @@ nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
 })
 
 -- vue.js
-nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
+--nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
+--  on_attach = on_attach,
+--  before_init = function(params)
+--    params.processId = vim.NIL
+--  end,
+--  cmd = containers.command('vuels'),
+--  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
+--})
+
+local function get_root_dir_for_volar(fname)
+  return local_lsp.get_root_dir("volar", fname)
+end
+
+
+nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
-  before_init = function(params)
-    params.processId = vim.NIL
-  end,
-  cmd = containers.command('vuels'),
-  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
+  root_dir = get_root_dir_for_volar,
+  cmd = containers.command(
+    "volar",
+    local_lsp.ensure_image_exists(
+      "volar",
+      {
+        network = "bridge",
+        cmd = {
+          "/usr/local/bin/vue-language-server",
+          -- "vue-language-server",
+          "--stdio"
+        }
+      }
+    )
+  ),
 })
--- nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
---   on_attach = on_attach,
---   cmd = containers.command(
---     "volar",
---     local_lsp.ensure_image_exists(
---       "volar",
---       {
---         network = "bridge",
---         cmd = {
---           "/usr/local/bin/vue-language-server",
---           -- "vue-language-server",
---           "--stdio"
---         }
---       }
---     )
---   ),
--- })
 
 -- packer/start/nvim-lspconfig/lua/lspconfig/configs.lua
 
