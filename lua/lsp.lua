@@ -79,42 +79,42 @@ local function get_root_dir_for_rust(fname)
   return result
 end
 
-nvim_lsp.rust_analyzer.setup(
-  coq.lsp_ensure_capabilities({
-      on_attach = on_attach,
-      cmd = containers.command(
-        "rust_analyzer",
-        local_lsp.ensure_image_exists(
-          "rust_analyzer",
-          {
-            network = "bridge",
-          }
-        )
-      ),
-      settings = {
-        ["rust_analyzer"] = {
-          imports = {
-            granularity = {
-              groups = "module"
-            },
-            prefix = "self",
-          },
-          cargo = {
-            buildScripts = {
-              enable = true
-            }
-          },
-          procMacro = {
-            enable = true
-          }
-        }
-      },
+-- nvim_lsp.rust_analyzer.setup(
+--   coq.lsp_ensure_capabilities({
+--       on_attach = on_attach,
+--       cmd = containers.command(
+--         "rust_analyzer",
+--         local_lsp.ensure_image_exists(
+--           "rust_analyzer",
+--           {
+--             network = "bridge",
+--           }
+--         )
+--       ),
+--       settings = {
+--         ["rust_analyzer"] = {
+--           imports = {
+--             granularity = {
+--               groups = "module"
+--             },
+--             prefix = "self",
+--           },
+--           cargo = {
+--             buildScripts = {
+--               enable = true
+--             }
+--           },
+--           procMacro = {
+--             enable = true
+--           }
+--         }
+--       },
 
-      -- get root_dir from container because there's no cargo in host
-      root_dir = get_root_dir_for_rust
-    }
-  )
-)
+--       -- get root_dir from container because there's no cargo in host
+--       root_dir = get_root_dir_for_rust
+--     }
+--   )
+-- )
 
 nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
@@ -131,28 +131,30 @@ nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
 --  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
 --})
 
-local function get_root_dir_for_volar(fname)
-  return local_lsp.get_root_dir("volar", fname)
+local function generate_root_dir_fn(lang)
+  return function (fname)
+    local_lsp.get_root_dir(lang, fname)
+  end
 end
 
 
 nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
-  root_dir = get_root_dir_for_volar,
+  root_dir = generate_root_dir_fn("volar"),
   cmd = containers.command(
     "volar",
-    local_lsp.ensure_image_exists(
-      "volar",
-      {
-        network = "bridge",
-        cmd = {
-          "/usr/local/bin/vue-language-server",
-          -- "vue-language-server",
-          "--stdio"
-        }
-      }
-    )
+    local_lsp.ensure_image_exists("volar")
   ),
+})
+
+-- php
+nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
+  on_attach = on_attach,
+  cmd = containers.command(
+    "phpactor",
+    local_lsp.ensure_image_exists("phpactor")
+  ),
+  root_dir = generate_root_dir_fn("phpactor"),
 })
 
 -- packer/start/nvim-lspconfig/lua/lspconfig/configs.lua
@@ -160,7 +162,7 @@ nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
 -- ruby
 -- nvim_lsp.solargraph.setup(coq.lsp_ensure_capabilities {
 --   on_attach = on_attach,
---   -- cmd = containers.command('solargraph'),
+--   -- cmd = ontainers.command('solargraph'),
 --   cmd = containers.command('solargraph', {
 --     image = "",
 --     cmd = function (runtime, volume, image)
@@ -200,21 +202,3 @@ nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
 --   }
 -- )
 
--- nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
---   on_attach = on_attach,
---   cmd = containers.command('phpactor', {
---     image = "",
---     cmd = function (runtime, volume, image)
---       return {
---         runtime,
---         "container",
---         "run",
---         "--interactive",
---         "--rm",
---         "--volume",
---         volume,
---         image
---       }
---     end,
---   }),
--- })
