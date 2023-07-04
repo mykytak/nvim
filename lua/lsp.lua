@@ -132,19 +132,19 @@ nvim_lsp.sumneko_lua.setup(coq.lsp_ensure_capabilities {
 --})
 
 local function generate_root_dir_fn(lang)
-  return function (fname)
-    local_lsp.get_root_dir(lang, fname)
+  return function(fname)
+    return local_lsp.get_root_dir(lang, fname)
   end
 end
 
 
 nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
-  root_dir = generate_root_dir_fn("volar"),
   cmd = containers.command(
     "volar",
     local_lsp.ensure_image_exists("volar")
   ),
+  root_dir = generate_root_dir_fn("volar"),
 })
 
 -- php
@@ -154,7 +154,7 @@ nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
     "phpactor",
     local_lsp.ensure_image_exists("phpactor")
   ),
-  root_dir = generate_root_dir_fn("phpactor"),
+  root_dir = generate_root_dir_fn("phpactor")
 })
 
 -- packer/start/nvim-lspconfig/lua/lspconfig/configs.lua
