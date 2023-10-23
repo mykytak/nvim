@@ -2,7 +2,7 @@ local vim = vim
 
 local LocalLsp = {}
 
-local skip_local_images = false
+local SKIP_LOCAL_IMAGES = false
 local config_name = ".lspconfig"
 
 local lsp_util = require'lspconfig.util'
@@ -59,7 +59,6 @@ LocalLsp.get_local_config = get_local_config;
 
 
 local function get_root_dir(lang, fname)
-  vim.notify("getting root dir for "..lang.." for "..fname)
   local cfg = get_local_config(fname, lang)
 
   local lang_config = require("lsp.local_lsp." .. lang)
@@ -93,7 +92,6 @@ local function get_root_dir(lang, fname)
     end
   end
 
-  vim.notify("got "..(root_dir or "NONE"))
   return root_dir
 end
 
@@ -109,9 +107,7 @@ local function get_project_cmd(lang, fname)
       or supported_languages[lang].cmd
       or ""
 
-  if skil_local_images then
-    return default_cmd
-  end
+  if SKIP_LOCAL_IMAGES then return default_cmd end
 
   local local_config = get_local_config(fname, lang)
 
@@ -132,10 +128,7 @@ local function get_project_image(lang, fname)
       and lang_config.image
       or  supported_languages[lang].image
 
-  if skip_local_images then
-    return default_image
-  end
-
+  if SKIP_LOCAL_IMAGES then return default_image end
 
   local local_config = get_local_config(fname, lang)
 
@@ -153,8 +146,6 @@ local function make_cmd_builder(lang, cfg)
   return function(runtime, workdir, image, network, docker_volume)
 
     local fname = cfg.fname
-
-    vim.notify("[LSP_IMAGE DEBUG] making cmd for:" .. fname)
 
     local local_config = get_local_config(workdir, lang)
 
@@ -176,6 +167,7 @@ local function make_cmd_builder(lang, cfg)
       "container",
       "run",
       "--interactive",
+      "--pid=host",
       "--rm",
       "--network="..network,
       "--workdir="..workdir,
@@ -187,31 +179,13 @@ local function make_cmd_builder(lang, cfg)
       table.insert(result, v)
     end
 
-
-    vim.notify("[LSP_IMAGE DEBUG] resulting cmd for" .. fname .. "is: \n" .. tprint(result))
-
     return result
   end
 end
 
 
 function LocalLsp.ensure_image_exists(lang, cfg)
-  if skip_local_images then
-    return cfg
-  end
-
-  local supported_languages = require("lspcontainers.init").supported_languages
-
-  -- if (supported_languages[lang] == nil) then
-  --   local default_options = {
-  --     container_runtime = "docker",
-  --     root_dir = vim.fn.getcwd(),
-  --     network = "none",
-  --     docker_volume = nil,
-  --   }
-
-  --   vim.tbl_extend("force", cfg, default_options)
-  -- end
+  if SKIP_LOCAL_IMAGES then return cfg end
 
   if cfg == nil then
     cfg = {}
@@ -223,7 +197,6 @@ function LocalLsp.ensure_image_exists(lang, cfg)
   cfg.image = cfg.image or get_project_image(lang, cfg.fname)
   cfg.root_dir = cfg.root_dir or get_root_dir(lang, cfg.fname)
   cfg.cmd_builder = make_cmd_builder(lang, cfg)
-  -- I should hijack into LspStart
 
   -- local fname = vim.api.nvim_buf_get_name(0)
   -- local local_config = get_local_config(fname)
