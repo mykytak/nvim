@@ -56,9 +56,16 @@ require("lazy").setup({
     -- 'wbthomason/packer.nvim', 
 
     'folke/tokyonight.nvim',
+    -- autocompletion
     {'ms-jpq/coq_nvim', branch='coq'},
-    -- apparently required for NERDTree or smth
-    -- use 'nvim-treesitter/nvim-treesitter'
+    {
+      'ms-jpq/coq.artifacts',
+      dependencies = { 'ms-jpq/coq_nvim' }
+    },
+    {
+      'nvim-treesitter/nvim-treesitter',
+      build = ":TSUpdate",
+    },
     -- comment stuff with gc
     'tpope/vim-commentary',
     -- session (re)store and tracking
@@ -251,20 +258,20 @@ require("lualine").setup {
 
 --------------------------
 ------- treesitter -------
------ maybe some day -----
 
--- require'nvim-treesitter.configs'.setup {
---   ensure_installed = { "rust", "lua", "bash", "c" },
+require'nvim-treesitter.configs'.setup {
+  ensure_installed = { "rust", "bash", "c", "html", "vim", "vimdoc", "javascript", "markdown", "markdown_inline", "query", "vue", "astro", "blade", "comment", "make", "cmake", "cpp", "css", "csv", "diff", "dockerfile", "editorconfig", "gitcommit", "graphql", "haskell", "http", "json", "ledger", "lua", "nginx", "nix", "norg", "php", "phpdoc", "python", "regex", "ruby", "scss", "sql", "tmux", "toml", "typescript", "xml", "yaml" },
+  -- "latex", "lua_patterns",
 
---   highlight = {
---     enable = true,
---     additional_vim_regex_highlighting = false,
---   },
+  highlight = {
+    enable = true,
+    additional_vim_regex_highlighting = false,
+  },
 
---   indent = {
---     enable = true,
---   }
--- }
+  indent = {
+    enable = true,
+  }
+}
 
 vim.opt.foldmethod = "manual"
 -- vim.opt.foldexpr = "nvim_treesitter#foldexpr()"

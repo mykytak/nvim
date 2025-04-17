@@ -214,7 +214,6 @@ local function WikiScriptsRecalculateDay()
   -- update current line
   -- simple: get final time from current line
   -- update all future lines
-  -- local res = updateDayLine("3.5h - fast           ( 12:30 - 16:00 )", "15:00");
   -- vim.notify(
   --   string.format('[wikiscripts] updated line:\n%s', res),
   --   vim.log.levels.INFO
