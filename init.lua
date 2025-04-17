@@ -23,6 +23,8 @@ vim.g.mapleader = ','
 set.termguicolors = true
 set.signcolumn = 'yes'
 
+-- set.scrolloff = 999
+set.inccommand = "split"
 
 --------------------
 ------- lazy -------
@@ -50,15 +52,19 @@ vim.opt.rtp:prepend(lazypath)
 
 -- return require('packer').startup(
 require("lazy").setup({
-    'wbthomason/packer.nvim',
+    -- unmaintained. And I'm using lazy anyway, why I need packer?
+    -- 'wbthomason/packer.nvim', 
 
     'folke/tokyonight.nvim',
     {'ms-jpq/coq_nvim', branch='coq'},
     -- apparently required for NERDTree or smth
     -- use 'nvim-treesitter/nvim-treesitter'
+    -- comment stuff with gc
     'tpope/vim-commentary',
+    -- session (re)store and tracking
     'tpope/vim-obsession',
-    'ThePrimeagen/git-worktree.nvim',
+    -- @deprecated I'm pretty sure I'm not using this
+    -- 'ThePrimeagen/git-worktree.nvim',
     'nvim-lualine/lualine.nvim',
     {
       'nvim-telescope/telescope.nvim',
@@ -68,7 +74,9 @@ require("lazy").setup({
     'preservim/nerdtree',
     -- use 'Tabular'
     'mattn/emmet-vim',
+    -- buffer list with <Leader>b
     'jeetsukumaran/vim-buffergator',
+    -- close buffers without closing split
     'qpkorr/vim-bufkill',
     {
       'vimwiki/vimwiki',
@@ -76,23 +84,85 @@ require("lazy").setup({
         vim.g.vimwiki_list = {{ path = '~/vimwiki/', syntax = 'markdown', ext = '.md' }}
       end
     },
-    'ryanoasis/vim-devicons',
+    'nvim-tree/nvim-web-devicons',
+    -- 'ryanoasis/vim-devicons'
     'neovim/nvim-lspconfig',
     'lspcontainers/lspcontainers.nvim',
 
     'mhinz/vim-signify',
     'kdheepak/lazygit.nvim',
 
+    -- match and highlight brackets and control flow structures
     {
       'andymass/vim-matchup',
       init = function()
-        -- may set any options here
         vim.g.matchup_matchparen_offscreen = { method = "popup" }
       end
     },
+    --[[
+    {
+      "ray-x/lsp_signature.nvim",
+      event = "VeryLazy",
+      opts = {},
+      config = function(_, opts) require'lsp_signature'.setup(opts) end
+    },
+    ]]
+    "othree/html5.vim",
+    "pangloss/vim-javascript",
+    -- { "evanleck/vim-svelte", branch="main" },
+
+    -- 'tools-life/taskwiki',
+
+    -- {
+    --   'justinmk/vim-sneak',
+    --   init = function()
+    --     vim.g["sneak#label"] = 1
+    --     vim.keymap.set("n", "f", "<Plug>Sneak_f")
+    --     vim.keymap.set("n", "F", "<Plug>Sneak_F")
+    --     vim.keymap.set("n", "t", "<Plug>Sneak_t")
+    --     vim.keymap.set("n", "T", "<Plug>Sneak_T")
+    --     -- vim.keymap.del("n", "<Plug>Sneak_s")
+    --     -- vim.keymap.del("n", "<Plug>Sneak_S")
+    --     -- vim.keymap.del("n", "<Plug>Sneak_,")
+    --     vim.keymap.del("n", "s")
+    --     vim.keymap.del("n", "S")
+    --     vim.keymap.del("n", ",")
+    --   end
+    -- },
 
     -- broken
     -- use 'lervag/vimtex'
+
+    -- {
+    --   "vhyrro/luarocks.nvim",
+    --   priority=1000,
+    --   config = true,
+    -- },
+    -- {
+    --   "nvim-neorg/neorg",
+    --   dependencies = { "luarocks.nvim" },
+    --   lazy = false,
+    --   version = "*",
+    --   ft = "norg",
+    --   config = function()
+    --     require("neorg").setup({
+    --       load = {
+    --         ["core.defaults"] = {},
+    --         ["core.dirman"] = {
+    --           config = {
+    --             workspaces = {
+    --             }
+    --           }
+    --         },
+    --         ["core.integrations"] = {
+    --           config = {
+    --             disable = { "treesitter" }
+    --           }
+    --         }
+    --       }
+    --     })
+    --   end
+    -- }
 })
 
 
@@ -222,4 +292,11 @@ vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>SignifyHunkDiff<CR>', {})
 vim.api.nvim_set_keymap('n', '<Leader>c', '<cmd>LazyGitCurrentFile<CR>', {})
 
 ----------------------
+
+
+require(".wikiscripts")
+
+vim.api.nvim_set_keymap('n', '<Leader>s', "<cmd>WikiScriptsFillBuffers<CR>", { noremap = true })
+vim.api.nvim_set_keymap('n', '<Leader>r', "<cmd>WikiScriptsRecalculateDay<CR>", { noremap = true })
+
 

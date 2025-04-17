@@ -6,13 +6,26 @@ vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
 local nvim_lsp   = require'lspconfig'
 local containers = require'lspcontainers'
 local lsp_util   = require'lspconfig.util'
+
+vim.g.coq_settings = {
+  ["auto_start"] = true -- not working :|
+}
+-- vim.g.coq_settings = {
+--   ["auto_start"] = true,
+--   ["keymap.jump_to_mark"] = "<c-n>",
+--   ["keymap.bigger_preview"] = "<c-b>",
+--   ["clients.buffers.enabled"] = false,
+--   ["clients.snippets.enabled"] = false,
+--   ["clients.tmux.enabled"] = false,
+--   ["clients.tree_sitter.enabled"] = false,
+-- }
 local coq        = require'coq'
 
 local set_lsp_buf_keymap = function(key, command)
   vim.api.nvim_set_keymap('n', key, '<cmd>lua vim.lsp.buf.'..command..'<CR>', {})
 end
 
-local on_attach = function(client)
+local on_attach = function(client, bufnr)
   set_lsp_buf_keymap('gd', 'definition()')
   set_lsp_buf_keymap('gr', 'references()')
   set_lsp_buf_keymap('gi', 'implementation()')
@@ -23,6 +36,13 @@ local on_attach = function(client)
   set_lsp_buf_keymap('KA', 'code_action()')
   -- vim.api.nvim_set_keymap('i', '<C-c>', '<cmd>lua vim.lsp.buf.completion()<CR>', {})
   set_lsp_buf_keymap('KR', 'rename()')
+
+  -- require "lsp_signature".on_attach({
+  --   bind = true,
+  --   handler_opts = {
+  --     border = "rounded"
+  --   }
+  -- }, bufnr)
 end
 
 -- vim.lsp.set_log_level("debug")
@@ -125,19 +145,43 @@ local function generate_root_dir_fn(lang)
 end
 
 
+-- nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
+--   on_attach = on_attach,
+--   cmd = containers.command(
+--     "volar",
+--     local_lsp.ensure_image_exists("volar")
+--   ),
+--   root_dir = generate_root_dir_fn("volar"),
+--   init_options = {
+--     typescript = {
+--       tsdk = "/usr/local/lib/node_modules/typescript/lib"
+--     }
+--   },
+--   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
+-- })
+
 nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
   on_attach = on_attach,
   cmd = containers.command(
     "volar",
     local_lsp.ensure_image_exists("volar")
   ),
-  root_dir = generate_root_dir_fn("volar"),
   init_options = {
     typescript = {
       tsdk = "/usr/local/lib/node_modules/typescript/lib"
     }
   },
+  root_dir = generate_root_dir_fn("volar"),
   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
+})
+
+nvim_lsp.svelte.setup(coq.lsp_ensure_capabilities {
+  on_attach = on_attach,
+  cmd = containers.command(
+    "svelte",
+    local_lsp.ensure_image_exists("svelte")
+  ),
+  root_dir = generate_root_dir_fn("svelte"),
 })
 
 -- nvim_lsp.tsserver.setup {
@@ -154,7 +198,7 @@ nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
     "phpactor",
     local_lsp.ensure_image_exists("phpactor")
   ),
-  root_dir = generate_root_dir_fn("phpactor")
+  root_dir = generate_root_dir_fn("phpactor"),
 })
 
 
