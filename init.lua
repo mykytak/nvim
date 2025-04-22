@@ -114,6 +114,14 @@ require("lazy").setup({
       config = function(_, opts) require'lsp_signature'.setup(opts) end
     },
     ]]
+    {
+      "olimorris/codecompanion.nvim",
+      opts = {},
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-treesitter/nvim-treesitter",
+      },
+    },
     "othree/html5.vim",
     "pangloss/vim-javascript",
     -- { "evanleck/vim-svelte", branch="main" },
@@ -297,6 +305,49 @@ vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>SignifyHunkDiff<CR>', {})
 ------- lazygit ------
 
 vim.api.nvim_set_keymap('n', '<Leader>c', '<cmd>LazyGitCurrentFile<CR>', {})
+
+----------------------
+
+
+----------------------
+--------- llm --------
+
+require("codecompanion").setup({
+  strategies = {
+    chat = {
+      adapter = "ollama",
+    },
+    inline = {
+      adapter = "ollama",
+    },
+    cmd = {
+      adapter = "ollama",
+    },
+  },
+  adapters = {
+    opts = {
+      show_default = false,
+    },
+    ollama = function ()
+      return require("codecompanion.adapters").extend("ollama", {
+        env = {
+          url = "http://api.ollama.loc",
+        },
+        headers = {
+          ["Content-Type"] = "application/json",
+        },
+        parameters = {
+          sync = true,
+        },
+        schema = {
+          model = {
+            default = "gemma3:1b"
+          },
+        },
+      })
+    end,
+  }
+})
 
 ----------------------
 
