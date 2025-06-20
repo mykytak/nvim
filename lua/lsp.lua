@@ -7,34 +7,27 @@ local nvim_lsp   = require'lspconfig'
 local containers = require'lspcontainers'
 local lsp_util   = require'lspconfig.util'
 
-vim.g.coq_settings = {
-  ["auto_start"] = true -- not working :|
-}
--- vim.g.coq_settings = {
---   ["auto_start"] = true,
---   ["keymap.jump_to_mark"] = "<c-n>",
---   ["keymap.bigger_preview"] = "<c-b>",
---   ["clients.buffers.enabled"] = false,
---   ["clients.snippets.enabled"] = false,
---   ["clients.tmux.enabled"] = false,
---   ["clients.tree_sitter.enabled"] = false,
--- }
-local coq        = require'coq'
-
 local set_lsp_buf_keymap = function(key, command)
-  vim.api.nvim_set_keymap('n', key, '<cmd>lua vim.lsp.buf.'..command..'<CR>', {})
+  vim.keymap.set('n', key, '<cmd>lua vim.lsp.buf.'..command..'<CR>', {})
 end
 
+vim.opt.completeopt = { "menuone", "noselect", "popup" }
 local on_attach = function(client, bufnr)
+  vim.lsp.completion.enable(true, client.id, bufnr, {
+    autotrigger = true,
+    convert = function (item)
+      return { abbr = item.label:gsub('%b()', '') }
+    end,
+  })
   set_lsp_buf_keymap('gd', 'definition()')
   set_lsp_buf_keymap('gr', 'references()')
   set_lsp_buf_keymap('gi', 'implementation()')
 
   -- vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
   set_lsp_buf_keymap('KK',  'hover()')
-  set_lsp_buf_keymap('<C-space>', 'signature_help()')
+  set_lsp_buf_keymap('<C-s>', 'signature_help()')
   set_lsp_buf_keymap('KA', 'code_action()')
-  -- vim.api.nvim_set_keymap('i', '<C-c>', '<cmd>lua vim.lsp.buf.completion()<CR>', {})
+  vim.keymap.set('i', '<C-space>', vim.lsp.completion.get, { desc = 'trigger autocompletion' })
   set_lsp_buf_keymap('KR', 'rename()')
 
   -- require "lsp_signature".on_attach({
@@ -95,48 +88,35 @@ local function get_root_dir_for_rust(fname)
   return result
 end
 
-nvim_lsp.rust_analyzer.setup(
-  coq.lsp_ensure_capabilities({
-      on_attach = on_attach,
-      cmd = containers.command(
-        "rust_analyzer",
-        local_lsp.ensure_image_exists(
-          "rust_analyzer",
-          { network = "bridge" }
-        )
-      ),
-      settings = {
-        ["rust_analyzer"] = {
-          imports = {
-            granularity = { groups = "module" },
-            prefix = "self",
-          },
-          cargo = {
-            buildScripts = { enable = true }
-          },
-          procMacro = { enable = true }
-        }
+nvim_lsp.rust_analyzer.setup({
+  on_attach = on_attach,
+  cmd = containers.command(
+    "rust_analyzer",
+    local_lsp.ensure_image_exists(
+      "rust_analyzer",
+      { network = "bridge" }
+    )
+  ),
+  settings = {
+    ["rust_analyzer"] = {
+      imports = {
+        granularity = { groups = "module" },
+        prefix = "self",
       },
-
-      root_dir = get_root_dir_for_rust
+      cargo = {
+        buildScripts = { enable = true }
+      },
+      procMacro = { enable = true }
     }
-  )
-)
+  },
 
-nvim_lsp.lua_ls.setup(coq.lsp_ensure_capabilities {
+  root_dir = get_root_dir_for_rust
+})
+
+nvim_lsp.lua_ls.setup({
   on_attach = on_attach,
   cmd = containers.command('lua_ls'),
 })
-
--- vue.js
---nvim_lsp.vuels.setup(coq.lsp_ensure_capabilities {
---  on_attach = on_attach,
---  before_init = function(params)
---    params.processId = vim.NIL
---  end,
---  cmd = containers.command('vuels'),
---  --root_dir = lsp_util.root_pattern(".git", vim.fn.getcwd()),
---})
 
 local function generate_root_dir_fn(lang)
   return function(fname)
@@ -145,22 +125,7 @@ local function generate_root_dir_fn(lang)
 end
 
 
--- nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
---   on_attach = on_attach,
---   cmd = containers.command(
---     "volar",
---     local_lsp.ensure_image_exists("volar")
---   ),
---   root_dir = generate_root_dir_fn("volar"),
---   init_options = {
---     typescript = {
---       tsdk = "/usr/local/lib/node_modules/typescript/lib"
---     }
---   },
---   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
--- })
-
-nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
+nvim_lsp.volar.setup({
   on_attach = on_attach,
   cmd = containers.command(
     "volar",
@@ -175,7 +140,7 @@ nvim_lsp.volar.setup(coq.lsp_ensure_capabilities {
   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
 })
 
-nvim_lsp.svelte.setup(coq.lsp_ensure_capabilities {
+nvim_lsp.svelte.setup({
   on_attach = on_attach,
   cmd = containers.command(
     "svelte",
@@ -191,8 +156,9 @@ nvim_lsp.svelte.setup(coq.lsp_ensure_capabilities {
 --   cmd = containers.command("tsserver")
 -- }
 
--- php
-nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
+-----------
+--- php ---
+nvim_lsp.phpactor.setup({
   on_attach = on_attach,
   cmd = containers.command(
     "phpactor",
@@ -203,7 +169,7 @@ nvim_lsp.phpactor.setup(coq.lsp_ensure_capabilities {
 
 
 -- ruby
-nvim_lsp.solargraph.setup(coq.lsp_ensure_capabilities {
+nvim_lsp.solargraph.setup({
   on_attach = on_attach,
   -- cmd = ontainers.command('solargraph'),
   cmd = containers.command(
@@ -213,14 +179,12 @@ nvim_lsp.solargraph.setup(coq.lsp_ensure_capabilities {
   root_dir = generate_root_dir_fn("solargraph")
 })
 
+vim.diagnostic.config({
+  virtual_text = true,
+  signs = true,
+  update_in_insert = false,
+  underline = true,
+  severity_sort = true,
+})
 
-vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(
-  vim.lsp.diagnostic.on_publish_diagnostics, {
-    virtual_text = true,
-    signs = true,
-    update_in_insert = false,
-    underline = true,
-    severity_sort = false,
-  }
-)
 

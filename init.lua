@@ -56,22 +56,18 @@ require("lazy").setup({
     -- 'wbthomason/packer.nvim', 
 
     'folke/tokyonight.nvim',
-    -- autocompletion
-    {'ms-jpq/coq_nvim', branch='coq'},
-    {
-      'ms-jpq/coq.artifacts',
-      dependencies = { 'ms-jpq/coq_nvim' }
-    },
     {
       'nvim-treesitter/nvim-treesitter',
       build = ":TSUpdate",
     },
     -- comment stuff with gc
-    'tpope/vim-commentary',
+    {
+      "folke/ts-comments.nvim",
+      opts = {},
+      event = "VeryLazy",
+    },
     -- session (re)store and tracking
     'tpope/vim-obsession',
-    -- @deprecated I'm pretty sure I'm not using this
-    -- 'ThePrimeagen/git-worktree.nvim',
     'nvim-lualine/lualine.nvim',
     {
       'nvim-telescope/telescope.nvim',
@@ -88,11 +84,15 @@ require("lazy").setup({
     {
       'vimwiki/vimwiki',
       init = function ()
-        vim.g.vimwiki_list = {{ path = '~/vimwiki/', syntax = 'markdown', ext = '.md' }}
+        local path = os.getenv("NEOVIM_VIMWIKI_HOME") or "~/vimwiki"
+        vim.g.vimwiki_list = {{
+          path = path,
+          syntax = 'markdown',
+          ext = '.md'
+        }}
       end
     },
     'nvim-tree/nvim-web-devicons',
-    -- 'ryanoasis/vim-devicons'
     'neovim/nvim-lspconfig',
     'lspcontainers/lspcontainers.nvim',
 
@@ -106,14 +106,6 @@ require("lazy").setup({
         vim.g.matchup_matchparen_offscreen = { method = "popup" }
       end
     },
-    --[[
-    {
-      "ray-x/lsp_signature.nvim",
-      event = "VeryLazy",
-      opts = {},
-      config = function(_, opts) require'lsp_signature'.setup(opts) end
-    },
-    ]]
     {
       "olimorris/codecompanion.nvim",
       opts = {},
@@ -123,10 +115,6 @@ require("lazy").setup({
       },
     },
     "othree/html5.vim",
-    "pangloss/vim-javascript",
-    -- { "evanleck/vim-svelte", branch="main" },
-
-    -- 'tools-life/taskwiki',
 
     -- {
     --   'justinmk/vim-sneak',
@@ -190,29 +178,24 @@ vim.g.vimwiki_list = {{ path = '~/vimwiki/', syntax = 'markdown', ext = 'md' }}
 
 ----------------------
 ------- colors -------
--- vim.g.tokyonight_transparent = true
--- vim.g.tokyonight_style = 'night'
-
--- vim.g.tokyonight_colors = {
---   LineNr,
---   comment = "#567989",
--- }
 
 require("tokyonight").setup({
   transparent = true,
   style = "night",
-  -- on_colors = function(colors)
-  --   colors.linenr = "#567989"
-  -- end
-})
+  on_colors = function(colors)
+    colors.comment = "#567989"
+  end,
+  on_highlights = function(highlights, colors)
+    highlights.LineNr     = { fg = "#5c7e8e" }
 
-vim.g.tokyonight_colors = {
-  comment = "#567989",
-}
+    highlights.DiffAdd    = { fg = "#20bf0f" }
+    highlights.DiffChange = { fg = "#d8c83a" }
+    highlights.DiffDelete = { fg = "#e84a5a" }
+  end
+})
 
 vim.cmd [[colorscheme tokyonight]]
 
-vim.cmd [[hi LineNr guifg=#ff9e64 ctermbg=NONE]]
 
 ----------------------
 ------- remaps -------
@@ -259,16 +242,11 @@ require("lualine").setup {
 
 
 
--------------------------
----------- COQ ----------
-
--- local vim.g.coq_settings.auto_start = true
-
 --------------------------
 ------- treesitter -------
 
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "rust", "bash", "c", "html", "vim", "vimdoc", "javascript", "markdown", "markdown_inline", "query", "vue", "astro", "blade", "comment", "make", "cmake", "cpp", "css", "csv", "diff", "dockerfile", "editorconfig", "gitcommit", "graphql", "haskell", "http", "json", "ledger", "lua", "nginx", "nix", "norg", "php", "phpdoc", "python", "regex", "ruby", "scss", "sql", "tmux", "toml", "typescript", "xml", "yaml" },
+  ensure_installed = { "rust", "bash", "c", "html", "vim", "vimdoc", "javascript", "markdown", "markdown_inline", "query", "vue", "astro", "blade", "comment", "make", "cmake", "cpp", "css", "csv", "diff", "dockerfile", "editorconfig", "gitcommit", "graphql", "haskell", "http", "json", "ledger", "lua", "nginx", "nix", "norg", "php", "phpdoc", "python", "regex", "ruby", "scss", "sql", "tmux", "toml", "typescript", "xml", "yaml", "odin" },
   -- "latex", "lua_patterns",
 
   highlight = {
@@ -281,8 +259,8 @@ require'nvim-treesitter.configs'.setup {
   }
 }
 
-vim.opt.foldmethod = "manual"
--- vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+-- vim.opt.foldmethod = "manual"
+vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
 
 
 -------------------------

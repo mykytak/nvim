@@ -141,6 +141,12 @@ end
 
 LocalLsp.get_project_image = get_project_image;
 
+local function pass_params(cmd, workdir)
+  for key in pairs(cmd) do
+    cmd[key] = cmd[key]:gsub("###working_dir###", workdir);
+  end
+  return cmd;
+end
 
 local function make_cmd_builder(lang, cfg)
   return function(runtime, workdir, image, network, docker_volume)
@@ -161,6 +167,7 @@ local function make_cmd_builder(lang, cfg)
     end
 
     if type(cfg.cmd) ~= "table" then cfg.cmd = { cfg.cmd } end
+    cfg.cmd = pass_params(cfg.cmd, workdir);
 
     local result = {
       runtime,
