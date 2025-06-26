@@ -203,33 +203,34 @@ vim.cmd [[colorscheme tokyonight]]
 vim.cmd [[cabbrev q <c-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'echo' : 'q')<CR>]]
 vim.cmd [[cabbrev x <c-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'echo' : 'x')<CR>]]
 -- wq should be just w
-vim.api.nvim_set_keymap('c', 'wq', 'w', {})
+vim.keymap.set('c', 'wq', 'w', {remap=true})
 -- disable accidental buffers/splits closing
-vim.api.nvim_set_keymap('n', '<C-q>', '<nop>', { noremap  = true })
-vim.api.nvim_set_keymap('n', '<C-w>q', '<nop>', { noremap = true })
-vim.api.nvim_set_keymap('n', '<C-w><C-q>', '<nop>', { noremap = true })
+vim.keymap.set('n', '<C-q>', '<nop>')
+vim.keymap.set('n', '<C-w>q', '<nop>')
+vim.keymap.set('n', '<C-w><C-q>', '<nop>')
 
 -- fast movement
-vim.api.nvim_set_keymap('', '<C-k>', '<C-u>', { noremap = true })
-vim.api.nvim_set_keymap('', '<C-j>', '<C-d>', { noremap = true })
+vim.keymap.set('', '<C-k>', '<C-u>')
+vim.keymap.set('', '<C-j>', '<C-d>')
 
 -- NERDTree
-vim.cmd [[ nnoremap <Tab> :NERDTreeToggle<CR> ]]
+vim.keymap.set('n', '<Tab>', '<cmd>NERDTreeToggle<CR>')
 
 -------------------------
 ------- telescope -------
-local telescope = require("telescope")
+local function telescope_setup()
+  local telescope = require("telescope")
 
-telescope.setup(
-)
-
--- telescope.load_extension("git_worktree")
+  telescope.setup()
 
 
-vim.api.nvim_set_keymap('n', '<C-P>', "<cmd>lua require('telescope.builtin').find_files()<CR>", { noremap = true })
-vim.api.nvim_set_keymap('n', '<C-F>', "<cmd>lua require('telescope.builtin').live_grep()<CR>", { noremap = true })
-vim.api.nvim_set_keymap('n', '<C-B>', "<cmd>lua require('telescope.builtin').buffers()<CR>", { noremap = true })
--- vim.api.nvim_set_keymap('n', '<C-T>', "<cmd>lua require('telescope').extensions.git_worktree.git_worktrees()<CR>", { noremap = true })
+  local builtin = require("telescope.builtin");
+  vim.keymap.set('n', '<C-P>', builtin.find_files)
+  vim.keymap.set('n', '<C-F>', builtin.live_grep)
+  vim.keymap.set('n', '<C-B>', builtin.buffers)
+end
+
+telescope_setup()
 
 -----------------------
 ------- lualine -------
@@ -274,7 +275,7 @@ require(".lsp")
 ----------------------
 ------- signify ------
 
-vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>SignifyHunkDiff<CR>', {})
+vim.keymap.set('n', '<Leader>d', '<cmd>SignifyHunkDiff<CR>');
 
 ----------------------
 
@@ -282,7 +283,7 @@ vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>SignifyHunkDiff<CR>', {})
 ----------------------
 ------- lazygit ------
 
-vim.api.nvim_set_keymap('n', '<Leader>c', '<cmd>LazyGitCurrentFile<CR>', {})
+vim.keymap.set('n', '<Leader>c', '<cmd>LazyGitCurrentFile<CR>')
 
 ----------------------
 
@@ -332,7 +333,7 @@ require("codecompanion").setup({
 
 require(".wikiscripts")
 
-vim.api.nvim_set_keymap('n', '<Leader>s', "<cmd>WikiScriptsFillBuffers<CR>", { noremap = true })
-vim.api.nvim_set_keymap('n', '<Leader>r', "<cmd>WikiScriptsRecalculateDay<CR>", { noremap = true })
+vim.keymap.set('n', '<Leader>s', "<cmd>WikiScriptsFillBuffers<CR>")
+vim.keymap.set('n', '<Leader>r', "<cmd>WikiScriptsRecalculateDay<CR>")
 
 

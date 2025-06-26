@@ -8,7 +8,7 @@ local containers = require'lspcontainers'
 local lsp_util   = require'lspconfig.util'
 
 local set_lsp_buf_keymap = function(key, command)
-  vim.keymap.set('n', key, '<cmd>lua vim.lsp.buf.'..command..'<CR>', {})
+  vim.keymap.set('n', key, vim.lsp.buf[command], {buffer=true})
 end
 
 vim.opt.completeopt = { "menuone", "noselect", "popup" }
@@ -19,16 +19,16 @@ local on_attach = function(client, bufnr)
       return { abbr = item.label:gsub('%b()', '') }
     end,
   })
-  set_lsp_buf_keymap('gd', 'definition()')
-  set_lsp_buf_keymap('gr', 'references()')
-  set_lsp_buf_keymap('gi', 'implementation()')
+  set_lsp_buf_keymap('gd', 'definition')
+  set_lsp_buf_keymap('gr', 'references')
+  set_lsp_buf_keymap('gi', 'implementation')
 
   -- vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
-  set_lsp_buf_keymap('KK',  'hover()')
-  set_lsp_buf_keymap('<C-s>', 'signature_help()')
-  set_lsp_buf_keymap('KA', 'code_action()')
+  set_lsp_buf_keymap('KK',  'hover')
+  set_lsp_buf_keymap('<C-s>', 'signature_help')
+  set_lsp_buf_keymap('KA', 'code_action')
   vim.keymap.set('i', '<C-space>', vim.lsp.completion.get, { desc = 'trigger autocompletion' })
-  set_lsp_buf_keymap('KR', 'rename()')
+  set_lsp_buf_keymap('KR', 'rename')
 
   -- require "lsp_signature".on_attach({
   --   bind = true,
