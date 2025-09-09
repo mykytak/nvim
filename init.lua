@@ -46,15 +46,15 @@ vim.opt.rtp:prepend(lazypath)
 
 
 ----------------------
-------- packer -------
--- vim.cmd [[packadd packer.nvim]]
--- vim.cmd [[packloadall]]
+-------- lazy --------
 
--- return require('packer').startup(
+local local_packages_path = os.getenv("NEOVIM_LOCAL_PLUGINS")
+
 require("lazy").setup({
-    -- unmaintained. And I'm using lazy anyway, why I need packer?
-    -- 'wbthomason/packer.nvim', 
-
+  dev = {
+    path = local_packages_path,
+  },
+  spec = {
     'folke/tokyonight.nvim',
     {
       'nvim-treesitter/nvim-treesitter',
@@ -133,48 +133,45 @@ require("lazy").setup({
     --   end
     -- },
 
+    {
+      'nvim-orgmode/orgmode',
+      event = 'VeryLazy',
+      config = function()
+        local path = os.getenv("NEOVIM_VIMWIKI_HOME") or "~/vimwiki"
+        require('orgmode').setup({
+          org_agenda_files = path .. '/**/*.org',
+          org_default_notes_file = path .. '/refile.org',
+          win_split_mode = "float",
+        })
+        vim.opt.conceallevel = 2
+      end,
+    },
+    {
+      "chipsenkbeil/org-roam.nvim",
+      tag = "0.1.1",
+      dependencies = {
+        {
+          "nvim-orgmode/orgmode",
+          tag = "0.3.7",
+        },
+      },
+      config = function()
+        local path = os.getenv("NEOVIM_VIMWIKI_HOME") or "~/vimwiki"
+        require("org-roam").setup({
+          directory = path .. "/system/tasks"
+        })
+      end
+    },
+
     -- broken
     -- use 'lervag/vimtex'
 
-    -- {
-    --   "vhyrro/luarocks.nvim",
-    --   priority=1000,
-    --   config = true,
-    -- },
-    -- {
-    --   "nvim-neorg/neorg",
-    --   dependencies = { "luarocks.nvim" },
-    --   lazy = false,
-    --   version = "*",
-    --   ft = "norg",
-    --   config = function()
-    --     require("neorg").setup({
-    --       load = {
-    --         ["core.defaults"] = {},
-    --         ["core.dirman"] = {
-    --           config = {
-    --             workspaces = {
-    --             }
-    --           }
-    --         },
-    --         ["core.integrations"] = {
-    --           config = {
-    --             disable = { "treesitter" }
-    --           }
-    --         }
-    --       }
-    --     })
-    --   end
-    -- }
+
+    -------------------
+    -- local plugins --
+    { "wikiscripts", dev=true },
+  }
 })
-
-
-----------------------
--- general  plugins --
-
--- vimwiki
-vim.g.vimwiki_list = {{ path = '~/vimwiki/', syntax = 'markdown', ext = 'md' }}
-
 
 ----------------------
 ------- colors -------
@@ -328,12 +325,14 @@ require("codecompanion").setup({
   }
 })
 
-----------------------
+---------------------
+--- local plugins ---
+require("wikiscripts").setup()
 
-
-require(".wikiscripts")
-
-vim.keymap.set('n', '<Leader>s', "<cmd>WikiScriptsFillBuffers<CR>")
+vim.keymap.set('n', '<Leader>s', "<cmd>WikiScriptsMakeLink<CR>")
 vim.keymap.set('n', '<Leader>r', "<cmd>WikiScriptsRecalculateDay<CR>")
+
+---------------------
+--- local plugins ---
 
 
