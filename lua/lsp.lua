@@ -3,9 +3,9 @@ local vim = vim
 local opts = { noremap=true, silent=true }
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
 
-local nvim_lsp   = require'lspconfig'
 local containers = require'lspcontainers'
 local lsp_util   = require'lspconfig.util'
+-- local lsp_util   = vim.lsp.config.util
 
 local set_lsp_buf_keymap = function(key, command)
   vim.keymap.set('n', key, vim.lsp.buf[command], {buffer=true})
@@ -40,7 +40,8 @@ end
 
 -- vim.lsp.set_log_level("debug")
 
-local local_lsp = require("lsp.local_lsp")
+-- local local_lsp = require("lsp.local_lsp")
+local local_lsp = require("local_lsp")
 
 local function get_root_dir_for_rust(fname)
   local cmd = containers.command(
@@ -88,7 +89,7 @@ local function get_root_dir_for_rust(fname)
   return result
 end
 
-nvim_lsp.rust_analyzer.setup({
+vim.lsp.config('rust_analyzer', {
   on_attach = on_attach,
   cmd = containers.command(
     "rust_analyzer",
@@ -112,20 +113,29 @@ nvim_lsp.rust_analyzer.setup({
 
   root_dir = get_root_dir_for_rust
 })
+vim.lsp.enable('rust_analyzer')
 
-nvim_lsp.lua_ls.setup({
+
+vim.lsp.config('lua_ls', {
   on_attach = on_attach,
   cmd = containers.command('lua_ls'),
 })
+vim.lsp.enable('lua_ls')
 
 local function generate_root_dir_fn(lang)
-  return function(fname)
-    return local_lsp.get_root_dir(lang, fname)
+  return function(bufnr, on_dir)
+    local fname = vim.api.nvim_buf_get_name(bufnr)
+    local root_dir = local_lsp.get_root_dir(lang, fname)
+  vim.notify(
+    string.format("generating root dir for %s and buffer %s which is %s", lang, fname, root_dir),
+    vim.log.levels.WARN
+  )
+    on_dir(root_dir)
   end
 end
 
 
-nvim_lsp.volar.setup({
+vim.lsp.config('vue_ls', {
   on_attach = on_attach,
   cmd = containers.command(
     "volar",
@@ -139,8 +149,10 @@ nvim_lsp.volar.setup({
   root_dir = generate_root_dir_fn("volar"),
   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
 })
+vim.lsp.set_log_level("debug")
+vim.lsp.enable('vue_ls')
 
-nvim_lsp.svelte.setup({
+vim.lsp.config('svelte', {
   on_attach = on_attach,
   cmd = containers.command(
     "svelte",
@@ -148,6 +160,7 @@ nvim_lsp.svelte.setup({
   ),
   root_dir = generate_root_dir_fn("svelte"),
 })
+vim.lsp.enable('svelte')
 
 -- nvim_lsp.tsserver.setup {
 --   before_init = function(params)
@@ -158,7 +171,7 @@ nvim_lsp.svelte.setup({
 
 -----------
 --- php ---
-nvim_lsp.phpactor.setup({
+vim.lsp.config('phpactor', {
   on_attach = on_attach,
   cmd = containers.command(
     "phpactor",
@@ -166,10 +179,11 @@ nvim_lsp.phpactor.setup({
   ),
   root_dir = generate_root_dir_fn("phpactor"),
 })
+vim.lsp.enable('phpactor')
 
 
 -- ruby
-nvim_lsp.solargraph.setup({
+vim.lsp.config('solargraph', {
   on_attach = on_attach,
   -- cmd = ontainers.command('solargraph'),
   cmd = containers.command(
@@ -178,6 +192,7 @@ nvim_lsp.solargraph.setup({
   ),
   root_dir = generate_root_dir_fn("solargraph")
 })
+vim.lsp.enable('solargraph')
 
 vim.diagnostic.config({
   virtual_text = true,
