@@ -50,10 +50,6 @@ local function generate_root_dir_fn(lang)
   return function(bufnr, on_dir)
     local fname = vim.api.nvim_buf_get_name(bufnr)
     local root_dir = local_lsp.get_root_dir(lang, fname)
-  vim.notify(
-    string.format("generating root dir for %s and buffer %s which is %s", lang, fname, root_dir),
-    vim.log.levels.WARN
-  )
     on_dir(root_dir)
   end
 end
@@ -82,10 +78,27 @@ local function generate_cmd_fn(lsp)
   end
 end
 
-vim.lsp.config("rust_analyzer", {
-  on_attach = on_attach,
-  filetypes = {"rust"},
-  cmd = generate_cmd_fn("rust_analyzer"),
+local setup_lsp = function(name, cfg, disable)
+  local final_cfg = {
+    on_attach = on_attach,
+    cmd = generate_cmd_fn(name),
+    root_dir = generate_root_dir_fn(name),
+  }
+
+  if type(cfg) == "table" then
+    for k, v in pairs(cfg) do
+      final_cfg[k] = v;
+    end
+  end
+
+  vim.lsp.config(name, final_cfg);
+
+  if disable then return end
+
+  vim.lsp.enable(name)
+end
+
+setup_lsp("rust_analyzer", {
   settings = {
     ["rust_analyzer"] = {
       imports = {
@@ -104,7 +117,6 @@ vim.lsp.config("rust_analyzer", {
       serverStatusNotification = true,
     },
   },
-  root_dir = generate_root_dir_fn("rust_analyzer"),
   before_init = function(params, config)
     if config.settings and config.settings['rust-analyzer'] then
       params.initializationOptions = config.settings['rust-analyzer']
@@ -112,13 +124,9 @@ vim.lsp.config("rust_analyzer", {
     params.processId = vim.NIL
   end,
 })
-vim.lsp.enable("rust_analyzer")
 
 
-vim.lsp.config("ts_ls", {
-  on_attach = on_attach,
-  cmd = generate_cmd_fn("ts_ls"),
-  root_dir = generate_root_dir_fn("ts_ls"),
+setup_lsp( "ts_ls", {
   init_options = {
     plugins = {
       {
@@ -140,44 +148,11 @@ vim.lsp.config("ts_ls", {
     'vue',
   },
 })
-vim.lsp.enable("ts_ls")
 
-
-vim.lsp.config('vue_ls', {
-  on_attach = on_attach,
-  cmd = generate_cmd_fn("vue_ls"),
-  root_dir = generate_root_dir_fn("vue_ls"),
-})
-vim.lsp.enable('vue_ls')
-
-vim.lsp.config('svelte', {
-  on_attach = on_attach,
-  cmd = generate_cmd_fn("svelte"),
-  root_dir = generate_root_dir_fn("svelte"),
-  filetypes = {"svelte"}
-})
-vim.lsp.enable('svelte')
-
-
------------
---- php ---
-vim.lsp.config('phpactor', {
-  on_attach = on_attach,
-  cmd = generate_cmd_fn("phpactor"),
-  root_dir = generate_root_dir_fn("phpactor"),
-  filetypes = {"php"}
-})
-vim.lsp.enable('phpactor')
-
-
--- ruby
-vim.lsp.config('solargraph', {
-  on_attach = on_attach,
-  cmd = generate_cmd_fn("solargraph"),
-  root_dir = generate_root_dir_fn("solargraph"),
-  filetypes = {"ruby"}
-})
-vim.lsp.enable('solargraph')
+setup_lsp("vue_ls")
+setup_lsp("svelte")
+setup_lsp("phpactor")
+setup_lsp("solargraph")
 
 vim.diagnostic.config({
   virtual_text = true,
