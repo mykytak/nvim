@@ -4,8 +4,6 @@ local opts = { noremap=true, silent=true }
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
 
 local containers = require'lspcontainers'
-local lsp_util   = require'lspconfig.util'
--- local lsp_util   = vim.lsp.config.util
 
 local set_lsp_buf_keymap = function(key, command)
   vim.keymap.set('n', key, vim.lsp.buf[command], {buffer=true})
@@ -38,87 +36,13 @@ local on_attach = function(client, bufnr)
   -- }, bufnr)
 end
 
--- vim.lsp.set_log_level("debug")
-
--- local local_lsp = require("lsp.local_lsp")
 local local_lsp = require("local_lsp")
-
-local function get_root_dir_for_rust(fname)
-  local cmd = containers.command(
-    "rust_analyzer",
-    local_lsp.ensure_image_exists(
-      "rust_analyzer",
-      { network = "bridge" }
-    )
-  )
-
-  local docker_cmd = { 'cargo', 'metadata', '--no-deps', '--format-version', '1' }
-
-  table.move(docker_cmd, 1, #docker_cmd, #cmd, cmd)
-
-  local cargo_metadata = ''
-  local cargo_metadata_err = ''
-  local cm = vim.fn.jobstart(table.concat(cmd, ' '), {
-    on_stdout = function(_, d, _)
-      cargo_metadata = table.concat(d, '\n')
-    end,
-    on_stderr = function(_, d, _)
-      cargo_metadata_err = table.concat(d, '\n')
-    end,
-    stdout_buffered = true,
-    stderr_buffered = true,
-  })
-  if cm > 0 then
-    cm = vim.fn.jobwait({ cm })[1]
-  else
-    cm = -1
-  end
-  local cargo_workspace_dir = nil
-  if cm == 0 then
-    cargo_workspace_dir = vim.fn.json_decode(cargo_metadata)['workspace_root']
-  else
-    vim.notify(
-    string.format('[lspconfig] cmd (%q) failed:\n%s', table.concat(cmd, ' '), cargo_metadata_err),
-    vim.log.levels.WARN
-    )
-  end
-  local result = cargo_workspace_dir
-  or lsp_util.root_pattern 'rust-project.json'(fname)
-  or lsp_util.find_git_ancestor(fname)
-
-  return result
-end
-
-vim.lsp.config('rust_analyzer', {
-  on_attach = on_attach,
-  cmd = containers.command(
-    "rust_analyzer",
-    local_lsp.ensure_image_exists(
-      "rust_analyzer",
-      { network = "bridge" }
-    )
-  ),
-  settings = {
-    ["rust_analyzer"] = {
-      imports = {
-        granularity = { groups = "module" },
-        prefix = "self",
-      },
-      cargo = {
-        buildScripts = { enable = true }
-      },
-      procMacro = { enable = true }
-    }
-  },
-
-  root_dir = get_root_dir_for_rust
-})
-vim.lsp.enable('rust_analyzer')
 
 
 vim.lsp.config('lua_ls', {
   on_attach = on_attach,
   cmd = containers.command('lua_ls'),
+  filetypes = {"lua"},
 })
 vim.lsp.enable('lua_ls')
 
@@ -134,50 +58,114 @@ local function generate_root_dir_fn(lang)
   end
 end
 
+local function generate_cmd_fn(lsp)
+  return function(dispatchers, config)
+    local my_cfg = local_lsp.ensure_image_exists(
+            lsp,
+            { network = "bridge" }
+          )
+
+    if my_cfg.sub_cmd ~= nil then
+      my_cfg.cmd = my_cfg.sub_cmd
+    end
+
+    local cmd = containers.command(
+      lsp,
+      my_cfg
+    )
+
+    return vim.lsp.rpc.start(cmd, dispatchers, {
+      cwd = config.cmd_cwd,
+      env = config.cmd_env,
+      detached = config.detached,
+    })
+  end
+end
+
+vim.lsp.config("rust_analyzer", {
+  on_attach = on_attach,
+  filetypes = {"rust"},
+  cmd = generate_cmd_fn("rust_analyzer"),
+  settings = {
+    ["rust_analyzer"] = {
+      imports = {
+        granularity = { groups = "module" },
+        prefix = "self",
+      },
+      cargo = {
+        buildScripts = { enable = false }
+      },
+      procMacro = { enable = false },
+    }
+  },
+
+  capabilities = {
+    experimental = {
+      serverStatusNotification = true,
+    },
+  },
+  root_dir = generate_root_dir_fn("rust_analyzer"),
+  before_init = function(params, config)
+    if config.settings and config.settings['rust-analyzer'] then
+      params.initializationOptions = config.settings['rust-analyzer']
+    end
+    params.processId = vim.NIL
+  end,
+})
+vim.lsp.enable("rust_analyzer")
+
+
+vim.lsp.config("ts_ls", {
+  on_attach = on_attach,
+  cmd = generate_cmd_fn("ts_ls"),
+  root_dir = generate_root_dir_fn("ts_ls"),
+  init_options = {
+    plugins = {
+      {
+        name = "@vue/typescript-plugin",
+        location = "/usr/local/lib/node_modules/@vue/language-server",
+        languages = { "vue" },
+        configNamespace = "typescript",
+      }
+    }
+  },
+  filetypes = {
+    'javascript',
+    'javascriptreact',
+    'javascript.jsx',
+    'typescript',
+    'typescriptreact',
+    'typescript.tsx',
+    'json',
+    'vue',
+  },
+})
+vim.lsp.enable("ts_ls")
+
 
 vim.lsp.config('vue_ls', {
   on_attach = on_attach,
-  cmd = containers.command(
-    "volar",
-    local_lsp.ensure_image_exists("volar")
-  ),
-  init_options = {
-    typescript = {
-      tsdk = "/usr/local/lib/node_modules/typescript/lib"
-    }
-  },
-  root_dir = generate_root_dir_fn("volar"),
-  filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
+  cmd = generate_cmd_fn("vue_ls"),
+  root_dir = generate_root_dir_fn("vue_ls"),
 })
-vim.lsp.set_log_level("debug")
 vim.lsp.enable('vue_ls')
 
 vim.lsp.config('svelte', {
   on_attach = on_attach,
-  cmd = containers.command(
-    "svelte",
-    local_lsp.ensure_image_exists("svelte")
-  ),
+  cmd = generate_cmd_fn("svelte"),
   root_dir = generate_root_dir_fn("svelte"),
+  filetypes = {"svelte"}
 })
 vim.lsp.enable('svelte')
 
--- nvim_lsp.tsserver.setup {
---   before_init = function(params)
---     params.processId = vim.NIL
---   end,
---   cmd = containers.command("tsserver")
--- }
 
 -----------
 --- php ---
 vim.lsp.config('phpactor', {
   on_attach = on_attach,
-  cmd = containers.command(
-    "phpactor",
-    local_lsp.ensure_image_exists("phpactor")
-  ),
+  cmd = generate_cmd_fn("phpactor"),
   root_dir = generate_root_dir_fn("phpactor"),
+  filetypes = {"php"}
 })
 vim.lsp.enable('phpactor')
 
@@ -185,12 +173,9 @@ vim.lsp.enable('phpactor')
 -- ruby
 vim.lsp.config('solargraph', {
   on_attach = on_attach,
-  -- cmd = ontainers.command('solargraph'),
-  cmd = containers.command(
-    "solargraph",
-    local_lsp.ensure_image_exists("solargraph")
-  ),
-  root_dir = generate_root_dir_fn("solargraph")
+  cmd = generate_cmd_fn("solargraph"),
+  root_dir = generate_root_dir_fn("solargraph"),
+  filetypes = {"ruby"}
 })
 vim.lsp.enable('solargraph')
 
