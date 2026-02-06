@@ -26,6 +26,9 @@ set.signcolumn = 'yes'
 -- set.scrolloff = 999
 set.inccommand = "split"
 
+vim.opt.grepprg = "rg --vimgrep --smart-case"
+vim.opt.grepformat = "%f:%l:%c:%m"
+
 --------------------
 ------- lazy -------
 
@@ -171,6 +174,7 @@ require("lazy").setup({
     -- local plugins --
     { "wikiscripts", dev=true },
     { "local_lsp", dev=true },
+    { "prioritizer", dev=true },
   }
 })
 
@@ -335,103 +339,15 @@ require("wikiscripts").setup()
 vim.keymap.set('n', '<Leader>s', "<cmd>WikiScriptsMakeLink<CR>")
 vim.keymap.set('n', '<Leader>r', "<cmd>WikiScriptsRecalculateDay<CR>")
 
+vim.keymap.set('n', 'gdn', "<cmd>WikiScriptsGoToNextDate<CR>")
+vim.keymap.set('n', 'gdp', "<cmd>WikiScriptsGoToPrevDate<CR>")
+vim.keymap.set('n', 'gtn', "<cmd>WikiScriptsGoToNextTime<CR>")
+vim.keymap.set('n', 'gtp', "<cmd>WikiScriptsGoToPrevTime<CR>")
+
+
+require("prioritizer").setup()
 
 ---------------=----
 --- experimental ---
 
--- vim.treesitter.language.register("markdown", "vimwiki")
--- vim.treesitter.language.register("markdown_inline", "vimwiki")
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "vimwiki",
-  callback = function()
-    -- combine markdown with vimwiki 
-    -- so it conceal viki links
-    -- vim.bo.syntax= "vimwiki"
-
-    local ts_utils = require("nvim-treesitter.ts_utils")
-
-    local curr_buf = vim.api.nvim_get_current_buf()
-    local function get_node_text(tnode)
-      return vim.treesitter.get_node_text(tnode, curr_buf)
-    end
-
-    local link_types = {
-      inline_link = true,
-      link_text = true,
-      link_destination = true,
-    }
-
-    local function node_is_link(node)
-      if node == nil or not link_types[node:type()] then
-        vim.notify("not a link")
-        return false
-      end
-
-      return true
-    end
-
-    -- because node:field("fieldname") returns {} for some reason
-    local function get_field(node, field)
-      for _, child in ipairs(node:named_children()) do
-        if child:type() == field then
-          return child
-        end
-      end
-
-      return nil
-    end
-
-    local function get_name(node)
-      if node:type() == "link_destination" then
-        node = node:parent()
-      end
-      if node:type() == "inline_link" then
-        node = get_field(node, "link_text")
-      end
-      if node:type() == "link_text" then
-        return get_node_text(node)
-      end
-
-      return nil
-    end
-
-    local function get_dest(node)
-      if node:type() == "link_text" then
-        node = node:parent()
-      end
-      if node:type() == "inline_link" then
-        node = get_field(node, "link_destination")
-      end
-      if node:type() == "link_destination" then
-        return get_node_text(node)
-      end
-
-      return nil
-    end
-
-    local function follow_link()
-      local node = ts_utils.get_node_at_cursor()
-      local id = get_dest(node)
-      if id == nil then return end
-
-      require("orgmode").instance().links:follow(id)
-    end
-
-    local function link_wiki_to_org()
-      local node = ts_utils.get_node_at_cursor()
-      if not node_is_link(node) then return end
-      local name = get_name(node)
-      local dest = get_dest(node)
-
-      if node:type() == "link_text" or node:type() == "link_destination" then node = node:parent() end
-
-      local org_link = string.format("[[%s][%s]]", dest, name)
-      local start_row, start_col, end_row, end_col = node:range()
-      vim.api.nvim_buf_set_text(curr_buf, start_row, start_col, end_row, end_col, { org_link })
-    end
-
-    vim.keymap.set("n", "<Leader>lf", follow_link, { buffer = true })
-    vim.keymap.set("n", "<Leader>lc", link_wiki_to_org, { buffer = true })
-  end
-})
 
