@@ -165,6 +165,76 @@ require("lazy").setup({
         })
       end
     },
+    {
+      'smoka7/hop.nvim',
+      version = "2.7.2",
+      opts = {
+        keys = 'etovxqpdygfblzhckisuran'
+      },
+      config = function()
+        local hop = require("hop")
+        hop.setup {}
+        vim.keymap.set('n', 'gw', function()
+          hop.hint_words()
+        end)
+
+        vim.keymap.set('n', 'gp', function()
+          hop.hint_patterns()
+        end)
+
+        vim.keymap.set('n', 'gc', function()
+          hop.hint_char1()
+        end)
+
+        -- local directions = require('hop.hint').HintDirection
+        -- vim.keymap.set('', 'f', function()
+        --   hop.hint_char1({ direction = directions.AFTER_CURSOR, current_line_only = true })
+        -- end, {remap=true})
+        -- vim.keymap.set('', 'а', function()
+        --   hop.hint_char1({ direction = directions.AFTER_CURSOR, current_line_only = true })
+        -- end, {remap=true})
+        --
+        -- vim.keymap.set('', 'F', function()
+        --   hop.hint_char1({ direction = directions.BEFORE_CURSOR, current_line_only = true })
+        -- end, {remap=true})
+        -- vim.keymap.set('', 'А', function()
+        --   hop.hint_char1({ direction = directions.BEFORE_CURSOR, current_line_only = true })
+        -- end, {remap=true})
+        --
+        -- vim.keymap.set('', 't', function()
+        --   hop.hint_char1({ direction = directions.AFTER_CURSOR, current_line_only = true, hint_offset = -1 })
+        -- end, {remap=true})
+        -- vim.keymap.set('', 'е', function()
+        --   hop.hint_char1({ direction = directions.AFTER_CURSOR, current_line_only = true, hint_offset = -1 })
+        -- end, {remap=true})
+        --
+        -- vim.keymap.set('', 'T', function()
+        --   hop.hint_char1({ direction = directions.BEFORE_CURSOR, current_line_only = true, hint_offset = 1 })
+        -- end, {remap=true})
+        -- vim.keymap.set('', 'Е', function()
+        --   hop.hint_char1({ direction = directions.BEFORE_CURSOR, current_line_only = true, hint_offset = 1 })
+        -- end, {remap=true})
+      end
+    },
+    "luizribeiro/vim-cooklang",
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      opts = {
+        -- your configuration comes here
+        -- or leave it empty to use the default settings
+        -- refer to the configuration section below
+      },
+      keys = {
+        {
+          "<leader>?",
+          function()
+            require("which-key").show({ global = false })
+          end,
+          desc = "Buffer Local Keymaps (which-key)",
+        },
+      },
+    },
 
     -- broken
     -- use 'lervag/vimtex'
@@ -249,7 +319,7 @@ require("lualine").setup {
 ------- treesitter -------
 
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "rust", "bash", "c", "html", "vim", "vimdoc", "javascript", "markdown", "markdown_inline", "query", "vue", "astro", "blade", "comment", "make", "cmake", "cpp", "css", "csv", "diff", "dockerfile", "editorconfig", "gitcommit", "graphql", "haskell", "http", "json", "ledger", "lua", "nginx", "nix", "php", "phpdoc", "python", "regex", "ruby", "scss", "sql", "tmux", "toml", "typescript", "xml", "yaml", "odin" },
+  ensure_installed = { "rust", "bash", "c", "html", "vim", "vimdoc", "javascript", "markdown", "markdown_inline", "query", "vue", "astro", "blade", "comment", "make", "cmake", "cpp", "css", "csv", "diff", "dockerfile", "editorconfig", "gitcommit", "graphql", "haskell", "http", "json", "ledger", "lua", "nginx", "nix", "php", "phpdoc", "python", "regex", "ruby", "scss", "sql", "tmux", "toml", "typescript", "xml", "yaml", "odin", "c_sharp" },
   -- "latex", "lua_patterns",
 
   highlight = {
